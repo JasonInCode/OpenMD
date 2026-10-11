@@ -116,11 +116,16 @@
 }
 
 /* ---------- 列表 ---------- */
+/* Chakra preflight 把 ol/ul 设为 list-style: none,这里按层级恢复标记 */
 .md-body ul,
 .md-body ol {
   margin: 0.7em 0;
   padding-left: 1.8em;
 }
+.md-body ul { list-style: disc; }
+.md-body ul ul { list-style: circle; }
+.md-body ul ul ul { list-style: square; }
+.md-body ol { list-style: decimal; }
 .md-body li { margin: 0.28em 0; }
 .md-body li > p { margin: 0.4em 0; }
 .md-body li::marker { color: #8c959f; }
