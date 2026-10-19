@@ -67,3 +67,9 @@ Desktop.ini
 
 # AI workspace data
 .workbuddy-ai
+
+# === lazy-boss 运行时产物（勿提交；语言/框架相关条目由用户自行配置）===
+.pi/
+.playwright-cli/
+.lazy-boss-db/
+.lazy-boss/eslint-report.json
