@@ -20,6 +20,10 @@ interface Pressed {
   grabX: number;
   grabY: number;
   width: number;
+  /** 被 setPointerCapture 绑回的 pointerId,松手前所有 pointermove 都会跟到
+   *  这里 —— 没有这一步,鼠标移出 tab 那一刻 onPointerMove 就不再触发,8px
+   *  阈值几乎永远过不去。 */
+  pointerId: number;
 }
 
 let pressed: Pressed | null = null;
@@ -36,7 +40,11 @@ export function startPress(tab: Tab, e: ReactPointerEvent<HTMLElement>): void {
     grabX: e.clientX - rect.left,
     grabY: e.clientY - rect.top,
     width: rect.width,
+    pointerId: e.pointerId,
   };
+  // 绑回这一枚 tab DOM,即便光标出框,pointermove/pointerup 还是会到 tab 上
+  // (浏览器原生命令,React 的 onPointerMove 同样受影响)。
+  e.currentTarget.setPointerCapture(e.pointerId);
 }
 
 export function trackDrag(e: ReactPointerEvent<HTMLElement>): void {
@@ -57,8 +65,16 @@ export function trackDrag(e: ReactPointerEvent<HTMLElement>): void {
 /**
  * 芯片窗口的兜底收尾:指针捕获万一在某个平台上没生效,松手事件会落到芯片窗口
  * 上。同一个命令是幂等的,谁先到谁算数,不会重复结算。
+ *
+ * 不能复用源窗口的 `settle`:那个版本一进门就检查模块级 `dragging` 标志,
+ * 而各 webview 的 JS context 互不可见 —— 芯片窗口这边 `dragging` 永远是
+ * `false`,引用它只会让每一次松手都被静默吞掉,芯片窗口永远没人收尾。
+ * Rust 侧的 `end_tab_drag` 没有会话时直接 no-op,所以这里放开调也没副作用。
  */
 export function watchChipDrag(): () => void {
+  const settle = () => {
+    void endTabDrag();
+  };
   window.addEventListener("pointerup", settle);
   window.addEventListener("pointerdown", settle);
   return () => {

@@ -115,8 +115,12 @@ pub fn take_pending_tabs(
 ///
 /// `grab_x` / `grab_y` 是抓取点在标签内的偏移(CSS 像素),`tab_width` 是标签宽度;
 /// 芯片窗口照着做,拖起来才像"手里捏着这一枚标签"。返回芯片窗口的 label。
+///
+/// 必须是 `async`:同步命令跑在 WebView2 的 IPC 回调里(就是 UI 线程),而
+/// WebviewWindowBuilder 建窗在同步命令里会死锁(Tauri 的 Known issues,
+/// wry#583)。UI 线程一卡,芯片窗口建不出来,主窗口的窗口控制也一起失效。
 #[tauri::command]
-pub fn begin_tab_drag(
+pub async fn begin_tab_drag(
     app: AppHandle,
     state: tauri::State<'_, TabDragState>,
     window: WebviewWindow,
@@ -166,10 +170,6 @@ pub fn begin_tab_drag(
         .map_err(|_| "标签缓冲不可用".to_string())?
         .insert(label.clone(), tab);
     remember_created(&state, &label);
-    if let Err(e) = open_window(&app, &label, chip_size, position, scale, true) {
-        state.pending.lock().ok().and_then(|mut p| p.remove(&label));
-        return Err(e);
-    }
 
     let source_label = window.label().to_string();
     remember_created(&state, &source_label);
@@ -182,10 +182,25 @@ pub fn begin_tab_drag(
         settle_min: min,
         targets: collect_targets(&app, &state, &[&label, window.label()]),
     });
+    // 会话必须先于 open_window 落地:新窗口的 React mount 与 build() 几乎同时
+    // 发生,一旦它在 take_pending_tabs 时发现 session 还是 None,ghost 就会误报
+    // 成 false,芯片窗口不会渲染跟手那一枚标签,而是把完整界面塞进 200×32 的
+    // 空间里(标题栏、tab 栏、内容区全部裁掉),看上去就是纯白一条。
     *state
         .session
         .lock()
         .map_err(|_| "拖拽状态不可用".to_string())? = Some(session.clone());
+
+    if let Err(e) = open_window(&app, &label, chip_size, position, scale, true) {
+        // 建窗失败,把会话和 pending 一起回滚,不遗留脏数据。
+        state.pending.lock().ok().and_then(|mut p| p.remove(&label));
+        if let Ok(mut slot) = state.session.lock() {
+            if matches!(slot.as_ref(), Some(current) if current.id == session.id) {
+                *slot = None;
+            }
+        }
+        return Err(e);
+    }
 
     spawn_poller(app, session.id);
     Ok(label)
@@ -194,9 +209,16 @@ pub fn begin_tab_drag(
 /// 结束拖拽:落到某个窗口就合并过去,否则让芯片窗口原地长成独立窗口。
 ///
 /// 幂等 —— 源窗口与芯片窗口谁先收到 pointerup 都调它,只生效一次。
+///
+/// 与 [`begin_tab_drag`] 同理必须 `async`:`resolve` 在芯片窗口已被销毁时会
+/// 重建一扇独立窗口,同样不能在 UI 线程上建。
 #[tauri::command]
-pub fn end_tab_drag(app: AppHandle, state: tauri::State<'_, TabDragState>) {
+pub async fn end_tab_drag(
+    app: AppHandle,
+    state: tauri::State<'_, TabDragState>,
+) -> Result<(), String> {
     resolve(&app, &state);
+    Ok(())
 }
 
 /// 结算当前拖拽(有会话才做事)。指针捕获在个别平台可能丢,源窗口和芯片窗口
@@ -324,16 +346,21 @@ fn spawn_poller(app: AppHandle, id: u64) {
 /// 切换落点高亮:旧目标收到"离开",新目标收到"进入"(带 CSS 像素横坐标,
 /// 由目标窗口自己在标签栏里算插入位)。
 fn set_hover(app: &AppHandle, state: &TabDragState, next: Option<&str>) {
-    let Ok(mut slot) = state.hover.lock() else { return };
-    if slot.as_deref() == next {
-        return;
+    let previous = {
+        let Ok(mut slot) = state.hover.lock() else { return };
+        if slot.as_deref() == next {
+            return;
+        }
+        std::mem::replace(&mut *slot, next.map(str::to_string))
+    };
+    if let Some(label) = previous {
+        let _ = app.emit_to(&label, "tab-drag-hover-end", ());
     }
-    if let Some(previous) = slot.take() {
-        let _ = app.emit_to(&previous, "tab-drag-hover-end", ());
-    }
+    // local_css_x 要问事件循环拿光标位置,emit_to 也要派发给 webview,两者都是
+    // 阻塞等主线程的往返。resolve() 拿的是同一把锁,持锁等主线程、主线程回头
+    // 等这把锁就成死锁,所以只在上面那段锁内换状态,派发一律放到锁外。
     if let Some(label) = next {
         let x = local_css_x(app, label);
-        *slot = Some(label.to_string());
         let _ = app.emit_to(label, "tab-drag-hover", serde_json::json!({ "x": x }));
     }
 }
