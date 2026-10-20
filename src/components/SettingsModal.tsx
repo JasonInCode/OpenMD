@@ -7,50 +7,35 @@ import {
   Flex,
   HStack,
   IconButton,
-  Image,
   Menu,
   Portal,
   Slider,
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { getVersion } from "@tauri-apps/api/app";
-import { openUrl } from "@tauri-apps/plugin-opener";
 import { useTheme } from "next-themes";
 import { useTranslation } from "react-i18next";
-import { FaQq } from "react-icons/fa6";
-import { RiBilibiliFill, RiTiktokFill } from "react-icons/ri";
 import {
   Check,
   ChevronDown,
-  Download,
-  Heart,
   ImagePlus,
-  Info,
   Minus,
   Palette,
   Plus,
-  RefreshCw,
   SlidersHorizontal,
   X,
 } from "lucide-react";
 import { useSettings, MAX_BACKGROUND_BLUR, type Language } from "../stores/settings";
-import { useUpdate } from "../stores/update";
 import { isFolderVerbRegistered, isMdAssociated, openImageDialog, registerFolderVerb, registerMdAssociation, unregisterFolderVerb, unregisterMdAssociation } from "../tauri/api";
 import { useBackgroundSrc } from "../lib/useBackgroundSrc";
 import { useOverlayBlur } from "../lib/overlayBlur";
 import { FloatingScrollbar } from "./FloatingScrollbar";
-import { QqGroupSection } from "./QqGroupSection";
 
-type SectionId = "general" | "appearance" | "sponsor" | "qq" | "about";
+type SectionId = "general" | "appearance";
 
-// 图标兼容 lucide 与 react-icons 两类组件
 const SECTIONS: { id: SectionId; labelKey: string; icon: ComponentType<{ size?: number | string }> }[] = [
   { id: "general", labelKey: "settings.section.general", icon: SlidersHorizontal },
   { id: "appearance", labelKey: "settings.section.appearance", icon: Palette },
-  { id: "sponsor", labelKey: "settings.section.sponsor", icon: Heart },
-  { id: "qq", labelKey: "settings.section.qq", icon: FaQq },
-  { id: "about", labelKey: "settings.section.about", icon: Info },
 ];
 
 /** 「名称 + 当前状态 + 操作按钮」一行。文件关联与右键菜单两个开关共用。 */
@@ -361,251 +346,6 @@ function AppearanceSection() {
   );
 }
 
-function SponsorSection() {
-  const { t } = useTranslation();
-  return (
-    <VStack align="center" gap={4} pt={2}>
-      <Text fontSize="sm" color="fg.muted" textAlign="center">
-        {t("settings.sponsor.invite")}
-      </Text>
-      <Flex gap={6} wrap="wrap" justify="center">
-        <VStack
-          gap={2}
-          p={3}
-          borderWidth="1px"
-          borderColor="border.subtle"
-          borderRadius="12px"
-        >
-          <Image src="/alipay.webp" alt={t("settings.sponsor.alipayQr")} w="150px" h="150px" borderRadius="8px" objectFit="cover" />
-          <Text fontSize="sm">{t("settings.sponsor.alipay")}</Text>
-        </VStack>
-        <VStack
-          gap={2}
-          p={3}
-          borderWidth="1px"
-          borderColor="border.subtle"
-          borderRadius="12px"
-        >
-          <Image src="/wechat.png" alt={t("settings.sponsor.wechatQr")} w="150px" h="150px" borderRadius="8px" objectFit="cover" />
-          <Text fontSize="sm">{t("settings.sponsor.wechat")}</Text>
-        </VStack>
-      </Flex>
-    </VStack>
-  );
-}
-
-function AboutSection() {
-  const { t } = useTranslation();
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme !== "light";
-  const [version, setVersion] = useState("1.0.4");
-  const { lastCheck, tag: latestTag, check, phase, progress, errorMsg, startDownload, install } =
-    useUpdate();
-
-  useEffect(() => {
-    // Tauri 环境读真实版本号;浏览器预览保持默认值。
-    getVersion()
-      .then(setVersion)
-      .catch(() => {});
-  }, []);
-
-  const openLink = async (url: string) => {
-    try {
-      await openUrl(url);
-    } catch {
-      window.open(url, "_blank");
-    }
-  };
-
-  /** 作者的平台链接(与 NexBox 相同)。 */
-  const authorLinks = [
-    {
-      label: t("settings.about.xiaoheihe"),
-      url: "https://xiaoheihe.cn/app/user/profile/56380800",
-      icon: <img src="/icons/xiaoheihe.webp" alt={t("settings.about.xiaoheihe")} style={{ width: "20px", height: "20px", objectFit: "contain" }} />,
-    },
-    {
-      label: "Bilibili",
-      url: "https://space.bilibili.com/1614951812",
-      icon: <RiBilibiliFill size={19} color="#00A1D6" />,
-    },
-    {
-      label: t("settings.about.douyin"),
-      url: "https://www.douyin.com/user/MS4wLjABAAAAytD1zP6zVeXgPQuG-PWHq4AhsZz9zNXPcJap2JVaoG88Ani9tmBj0FtH7DLrQWsH",
-      icon: <RiTiktokFill size={18} color="currentColor" />,
-    },
-  ];
-
-  const checking = lastCheck === "checking";
-
-  return (
-    <VStack align="stretch" gap={0} pt={2}>
-      {/* Logo(居中,位置偏上) */}
-      <Flex justify="center" py={4}>
-        <img
-          src={isDark ? "/wordmark-white.png" : "/wordmark-black.png"}
-          alt="OpenMD"
-          draggable={false}
-          style={{
-            width: "min(300px, 72%)",
-            height: "auto",
-            mixBlendMode: isDark ? "screen" : "multiply",
-            userSelect: "none",
-          }}
-        />
-      </Flex>
-
-      {/* 版本行(与外观页同款样式) */}
-      <Flex justify="space-between" align="center" gap={6} py={3} borderBottomWidth="1px" borderColor="border.subtle">
-        <Text fontSize="sm" color="fg.muted" flexShrink={0}>
-          {t("settings.about.version")}
-        </Text>
-        <HStack gap={3}>
-          <Text fontSize="sm">{version}</Text>
-          <Button
-            size="xs"
-            variant="outline"
-            borderColor="border.subtle"
-            gap={1}
-            onClick={() => void check()}
-            disabled={checking}
-          >
-            <RefreshCw size={12} className={checking ? "animate-spin" : undefined} />
-            {checking ? t("settings.about.checking") : t("settings.about.checkUpdate")}
-          </Button>
-        </HStack>
-      </Flex>
-
-      {/* 更新行:与右下角弹窗共用状态,内嵌 下载→进度→重启安装 完整流程 */}
-      {(lastCheck === "available" || phase === "downloading" || phase === "complete" || phase === "error") && (
-        <Flex justify="space-between" align="center" gap={6} py={3} borderBottomWidth="1px" borderColor="border.subtle">
-          <Text fontSize="sm" color="fg.muted" flexShrink={0}>
-            {t("settings.about.update")}
-          </Text>
-          <Box flex={1} minW={0}>
-            <Flex justify="flex-end" align="center" gap={3}>
-              {phase === "prompt" && (
-                <>
-                  <Text fontSize="sm">{t("settings.about.newVersion", { tag: latestTag })}</Text>
-                  <Button size="xs" variant="subtle" gap={1} onClick={() => void startDownload()}>
-                    <Download size={12} />
-                    {t("settings.about.download")}
-                  </Button>
-                </>
-              )}
-              {phase === "complete" && (
-                <>
-                  <Text fontSize="sm">{t("settings.about.downloadComplete")}</Text>
-                  <Button size="xs" variant="subtle" gap={1} onClick={() => void install()}>
-                    <RefreshCw size={12} />
-                    {t("settings.about.restartInstall")}
-                  </Button>
-                </>
-              )}
-              {phase === "error" && (
-                <Text fontSize="sm" color="red.400" wordBreak="break-all">
-                  {errorMsg || t("settings.about.downloadFailed")}
-                </Text>
-              )}
-            </Flex>
-            {phase === "downloading" && (
-              <VStack align="stretch" gap={1} ml="auto" w="240px">
-                <HStack justify="space-between">
-                  <Text fontSize="xs" color="fg.muted">
-                    {t("settings.about.downloading", { tag: latestTag })}
-                  </Text>
-                  <Text fontSize="xs" color="fg.muted" fontVariantNumeric="tabular-nums">
-                    {Math.round(progress)}%
-                  </Text>
-                </HStack>
-                <Box h="6px" bg="bg.subtle" borderRadius="full" overflow="hidden">
-                  <Box
-                    h="full"
-                    bg="fg"
-                    borderRadius="full"
-                    width={`${Math.min(100, Math.max(0, progress))}%`}
-                    transition="width 0.2s ease"
-                  />
-                </Box>
-              </VStack>
-            )}
-          </Box>
-        </Flex>
-      )}
-
-      {lastCheck === "latest" && (
-        <Flex justify="space-between" align="center" gap={6} py={3} borderBottomWidth="1px" borderColor="border.subtle">
-          <Text fontSize="sm" color="fg.muted" flexShrink={0}>
-            {t("settings.about.update")}
-          </Text>
-          <Text fontSize="sm">{t("settings.about.upToDate")}</Text>
-        </Flex>
-      )}
-
-      {lastCheck === "error" && phase !== "error" && (
-        <Flex justify="space-between" align="center" gap={6} py={3} borderBottomWidth="1px" borderColor="border.subtle">
-          <Text fontSize="sm" color="fg.muted" flexShrink={0}>
-            {t("settings.about.update")}
-          </Text>
-          <Text fontSize="sm" color="red.400">
-            {t("settings.about.checkFailed")}
-          </Text>
-        </Flex>
-      )}
-
-      {/* 作者行(与外观页同款样式) */}
-      <Flex justify="space-between" align="center" gap={6} py={3} borderBottomWidth="1px" borderColor="border.subtle">
-        <Text fontSize="sm" color="fg.muted" flexShrink={0}>
-          {t("settings.about.author")}
-        </Text>
-        <HStack gap={4}>
-          <HStack gap={2}>
-            <Box
-              w="32px"
-              h="32px"
-              borderRadius="lg"
-              overflow="hidden"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              flexShrink={0}
-            >
-              <img
-                src="/logo/MuLiuSaMa.webp"
-                alt={t("settings.about.authorName")}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            </Box>
-            <Text fontSize="sm" fontWeight="medium">
-              {t("settings.about.authorName")}
-            </Text>
-          </HStack>
-          <Flex align="center" gap={2}>
-              {authorLinks.map((p) => (
-                <Box
-                  key={p.label}
-                  w="28px"
-                  h="28px"
-                  borderRadius="md"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  cursor="pointer"
-                  color="fg.muted"
-                  transition="all 0.2s"
-                  _hover={{ bg: "bg.subtle", color: "fg", transform: "scale(1.1)" }}
-                  onClick={() => void openLink(p.url)}
-                >
-                  {p.icon}
-                </Box>
-              ))}
-            </Flex>
-        </HStack>
-      </Flex>
-    </VStack>
-  );
-}
-
 /** 界面语言选择行(通用设置第一行)。 */
 function LanguageRow() {
   const { t } = useTranslation();
@@ -680,7 +420,7 @@ function LanguageRow() {
 }
 
 /**
- * 设置弹窗:左侧导航(通用/外观/赞助/关于) + 右侧内容。
+ * 设置弹窗:左侧导航(通用/外观) + 右侧内容。
  * 背景半透明模糊;由首页左下角与顶栏"主题"左侧的设置按钮唤起。
  */
 export function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -763,9 +503,6 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                 <Box ref={contentRef} className="no-scrollbar" flex={1} minW={0} p={6} overflowY="auto">
                   {section === "general" && <GeneralSection />}
                   {section === "appearance" && <AppearanceSection />}
-                  {section === "sponsor" && <SponsorSection />}
-                  {section === "qq" && <QqGroupSection />}
-                  {section === "about" && <AboutSection />}
                 </Box>
                 <FloatingScrollbar targetRef={contentRef} />
               </Box>

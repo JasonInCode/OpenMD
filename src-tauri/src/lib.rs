@@ -4,11 +4,9 @@ mod commands;
 mod editors;
 mod file_assoc;
 mod i18n;
-mod qq_group;
 mod stats;
 mod tab_drag;
 mod tray;
-mod updater;
 mod watcher;
 
 use std::path::{Path, PathBuf};
@@ -230,19 +228,12 @@ pub fn run() {
             tab_drag::take_pending_tabs,
             i18n::set_language,
             commands::log_assoc,
-            updater::download_update,
-            updater::install_update,
-            updater::cancel_download,
-            updater::reset_download_cancel,
-            updater::delete_download_file,
             file_assoc::is_md_associated,
             file_assoc::register_md_association,
             file_assoc::unregister_md_association,
             file_assoc::is_folder_verb_registered,
             file_assoc::register_folder_verb,
             file_assoc::unregister_folder_verb,
-            qq_group::get_qq_groups,
-            qq_group::get_qq_group_icon,
         ])
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::Destroyed => {

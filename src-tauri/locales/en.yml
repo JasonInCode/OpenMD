@@ -1,6 +1,5 @@
 tray:
   show: Show Main Window
-  check_update: Check for Updates
   quit: Quit
 
 editors:
@@ -15,9 +14,6 @@ file_assoc:
   exe_path_unavailable: "Cannot get the executable path: %{error}"
   registry_write_failed: "Failed to write the registry: %{error}"
   registry_delete_failed: "Failed to delete the registry key: %{error}"
-
-qq_group:
-  fallback_group_name: "Group ①"
 
 read:
   refuse_non_text: "Refusing to read a non-text file: %{path}"
@@ -49,9 +45,3 @@ image:
 
 asset:
   allow_failed: "Failed to allow asset %{path}: %{error}"
-
-updater:
-  download_failed: "Download failed (HTTP %{status})"
-  cancelled: Download cancelled
-  incomplete: "Download incomplete: expected %{expected}, got %{actual}"
-  launch_failed: "Failed to launch installer (error: %{code})"

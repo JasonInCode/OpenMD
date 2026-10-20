@@ -1,6 +1,4 @@
 {
-  "shell.upToDate": "You're up to date",
-  "shell.updateCheckFailed": "Update check failed. Please try again later",
   "shell.openErrorClickToDismiss": "{{error}} — Click to dismiss",
   "shell.toggleTheme": "Toggle theme",
   "shell.toggleThemeTitle": "Switch light/dark theme",
@@ -39,7 +37,6 @@
   "shell.charCount": "{{count}} chars",
   "shell.headingCount": "{{count}} headings",
   "shell.openFailed": "Failed to open",
-  "shell.author": "Author: 木流",
   "shell.noHeadings": "No headings",
   "shell.editModeOn": "Edit mode on",
   "shell.editModeOff": "Edit mode off"

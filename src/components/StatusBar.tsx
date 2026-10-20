@@ -43,9 +43,11 @@ export function StatusBar() {
           <Text>{t("shell.headingCount", { count: entries.length })}</Text>
         </>
       )}
-      <Text ms="auto" color="fg.subtle">
-        {tab.error ? t("shell.openFailed") : t("shell.author")}
-      </Text>
+      {tab.error && (
+        <Text ms="auto" color="fg.subtle">
+          {t("shell.openFailed")}
+        </Text>
+      )}
     </HStack>
   );
 }

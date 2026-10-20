@@ -1,6 +1,5 @@
 tray:
   show: メインウィンドウを表示
-  check_update: アップデートを確認
   quit: 終了
 
 editors:
@@ -15,9 +14,6 @@ file_assoc:
   exe_path_unavailable: "実行ファイルのパスを取得できません: %{error}"
   registry_write_failed: "レジストリの書き込みに失敗しました: %{error}"
   registry_delete_failed: "レジストリキーの削除に失敗しました: %{error}"
-
-qq_group:
-  fallback_group_name: グループ①
 
 read:
   refuse_non_text: "テキスト以外のファイルの読み取りを拒否しました: %{path}"
@@ -49,9 +45,3 @@ image:
 
 asset:
   allow_failed: "アセットファイル %{path} を許可できません: %{error}"
-
-updater:
-  download_failed: "ダウンロードに失敗しました (HTTP %{status})"
-  cancelled: ダウンロードをキャンセルしました
-  incomplete: "ダウンロードが不完全です: 期待 %{expected}、実際 %{actual}"
-  launch_failed: "インストーラーを起動できませんでした (エラーコード: %{code})"

@@ -1,9 +1,9 @@
-//! 系统托盘:左键单击显示主窗口,右键菜单(显示主窗口 / 检查更新 / 退出)。
+//! 系统托盘:左键单击显示主窗口,右键菜单(显示主窗口 / 退出)。
 
 use rust_i18n::t;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Manager};
 
 /// 托盘图标 id(切换语言重建菜单时按此查找)。
 pub const TRAY_ID: &str = "main-tray";
@@ -20,9 +20,8 @@ pub fn show_main_window(app: &AppHandle) {
 /// 按当前语言构建托盘右键菜单。
 pub fn build_tray_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     let show = MenuItem::with_id(app, "show", t!("tray.show"), true, None::<&str>)?;
-    let check_update = MenuItem::with_id(app, "check-update", t!("tray.check_update"), true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", t!("tray.quit"), true, None::<&str>)?;
-    Menu::with_items(app, &[&show, &check_update, &quit])
+    Menu::with_items(app, &[&show, &quit])
 }
 
 /// 用当前语言重建托盘菜单(set_language 切换语言后调用,托盘原地刷新)。
@@ -44,10 +43,6 @@ pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
         .tooltip("OpenMD")
         .on_menu_event(|app, event| match event.id.as_ref() {
             "show" => show_main_window(app),
-            // 检查更新由前端执行(复用更新弹窗与提示逻辑)
-            "check-update" => {
-                let _ = app.emit_to(crate::MAIN_WINDOW, "tray-check-update", ());
-            }
             "quit" => app.exit(0),
             _ => {}
         })

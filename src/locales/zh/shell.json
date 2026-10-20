@@ -1,6 +1,4 @@
 {
-  "shell.upToDate": "当前已是最新版本",
-  "shell.updateCheckFailed": "检查更新失败，请稍后重试",
   "shell.openErrorClickToDismiss": "{{error}} — 点击关闭",
   "shell.toggleTheme": "切换主题",
   "shell.toggleThemeTitle": "切换亮/暗主题",
@@ -39,7 +37,6 @@
   "shell.charCount": "{{count}} 字符",
   "shell.headingCount": "{{count}} 个标题",
   "shell.openFailed": "打开失败",
-  "shell.author": "作者：木流",
   "shell.noHeadings": "无标题",
   "shell.editModeOn": "已进入编辑模式",
   "shell.editModeOff": "已退出编辑模式"

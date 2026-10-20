@@ -11,7 +11,6 @@ import { Sidebar } from "./components/Sidebar";
 import { MarkdownView } from "./components/MarkdownView";
 import { EmptyState } from "./components/EmptyState";
 import { StatusBar } from "./components/StatusBar";
-import { UpdatePopup } from "./components/UpdatePopup";
 import { TabGhost } from "./components/TabGhost";
 import { AppBackground } from "./components/AppBackground";
 import { CloseDialog } from "./components/CloseDialog";
@@ -19,7 +18,6 @@ import { UnsavedDialog } from "./components/UnsavedDialog";
 import { useTabs } from "./stores/tabs";
 import { useSettings } from "./stores/settings";
 import { useWorkspace } from "./stores/workspace";
-import { useUpdate } from "./stores/update";
 import { openStandaloneFiles } from "./lib/openStandaloneFiles";
 import { IS_MAIN_WINDOW, closeWindow } from "./lib/window";
 import { measureInsertion } from "./lib/tabDrop";
@@ -75,10 +73,7 @@ export default function App() {
   const { tocOpen, backgroundImage, editMode } = useSettings();
   const [openError, setOpenError] = useState<string | null>(null);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
-  // 托盘"检查更新"的结果提示(已是最新/失败);发现新版本时直接弹更新弹窗
-  const [notice, setNotice] = useState<string | null>(null);
-  const noticeTimerRef = useRef<number | null>(null);
-  // 顶部提示条(编辑模式切换等):与底部 notice 相互独立,3 秒自动消失。
+  // 顶部提示条(编辑模式切换等):3 秒自动消失。
   // phase 用于播退场动画(closing → 动画播完再卸载)。
   const [topNotice, setTopNotice] = useState<{ text: string; phase: "open" | "closing" } | null>(null);
   const topNoticeTimerRef = useRef<number | null>(null);
@@ -87,23 +82,7 @@ export default function App() {
 
   const activeTab = tabs.find((t) => t.id === activeId) ?? tabs[0];
 
-  // 启动自动检查更新(GitCode release,带令牌认证);发现新版本时右下角弹更新弹窗。
-  useEffect(() => {
-    if (!inTauri) return;
-    const timer = window.setTimeout(() => {
-      void useUpdate.getState().check();
-    }, 1500);
-    // 下载进度事件 → store
-    const unlisten = listen<{ progress: number }>("update-download-progress", (e) => {
-      useUpdate.getState().setProgress(e.payload.progress);
-    });
-    return () => {
-      window.clearTimeout(timer);
-      unlisten.then((fn) => fn()).catch(() => {});
-    };
-  }, []);
-
-  // 托盘事件:关闭询问(点 X 被 Rust 拦截)与"检查更新"菜单项。
+  // 托盘事件:点 X 关闭被 Rust 拦截后的行为(关闭询问 / 收进托盘 / 直接退出)。
   useEffect(() => {
     if (!inTauri) return;
     const unlistenClose = listen("close-requested", () => {
@@ -126,28 +105,10 @@ export default function App() {
         setCloseDialogOpen(true);
       }
     });
-    const unlistenTrayCheck = listen("tray-check-update", () => {
-      void useUpdate.getState().check().then((result) => {
-        if (result === "latest") showNotice(t("shell.upToDate"));
-        else if (result === "error") showNotice(t("shell.updateCheckFailed"));
-        // available 时更新弹窗自动弹出,无需额外提示
-      });
-    });
     return () => {
       unlistenClose.then((fn) => fn()).catch(() => {});
-      unlistenTrayCheck.then((fn) => fn()).catch(() => {});
     };
   }, []);
-
-  // 底部居中提示条(3 秒自动消失)
-  const showNotice = (text: string) => {
-    if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
-    setNotice(text);
-    noticeTimerRef.current = window.setTimeout(() => {
-      setNotice(null);
-      noticeTimerRef.current = null;
-    }, 3000);
-  };
 
   // 顶部提示条(3 秒自动消失):先播入场动画,收起时切 closing 播退场动画再卸载。
   const showTopNotice = (text: string) => {
@@ -449,24 +410,6 @@ export default function App() {
           <StatusBar />
         </Flex>
       )}
-      {notice && (
-        <Flex
-          position="fixed"
-          bottom="36px"
-          left="50%"
-          transform="translateX(-50%)"
-          bg="fg"
-          color="bg"
-          px={4}
-          py={2}
-          borderRadius="md"
-          fontSize="xs"
-          boxShadow="lg"
-          zIndex={100}
-        >
-          {notice}
-        </Flex>
-      )}
       {openError && (
         <Flex
           position="fixed"
@@ -487,7 +430,6 @@ export default function App() {
           {t("shell.openErrorClickToDismiss", { error: openError })}
         </Flex>
       )}
-      <UpdatePopup />
       <CloseDialog open={closeDialogOpen} onClose={() => setCloseDialogOpen(false)} />
       <UnsavedDialog />
     </Flex>

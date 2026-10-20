@@ -332,27 +332,3 @@ export async function logAssoc(message: string): Promise<void> {
   return invoke("log_assoc", { message });
 }
 
-// ---- QQ 群列表(设置页,数据来自 gitee) ----
-
-export interface QqGroup {
-  name: string;
-  number: string;
-  /** 加群链接(qm.qq.com),为空时点击退化为复制群号 */
-  link: string;
-  /** 群图标 URL(gitee raw),为空时显示默认 QQ 图标 */
-  icon?: string;
-}
-
-export interface QqGroupsData {
-  update_time: string;
-  groups: QqGroup[];
-}
-
-export async function getQqGroups(): Promise<QqGroupsData> {
-  return invoke("get_qq_groups");
-}
-
-/** 后端下载群图标到缓存,返回本地路径(配合 convertFileSrc 显示) */
-export async function getQqGroupIcon(url: string): Promise<string> {
-  return invoke("get_qq_group_icon", { url });
-}

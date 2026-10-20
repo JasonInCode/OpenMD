@@ -1,6 +1,4 @@
 {
-  "shell.upToDate": "最新バージョンです",
-  "shell.updateCheckFailed": "アップデートの確認に失敗しました。後でもう一度お試しください",
   "shell.openErrorClickToDismiss": "{{error}} — クリックで閉じる",
   "shell.toggleTheme": "テーマを切り替える",
   "shell.toggleThemeTitle": "ライト/ダークテーマを切り替える",
@@ -39,7 +37,6 @@
   "shell.charCount": "{{count}} 文字",
   "shell.headingCount": "{{count}} 個の見出し",
   "shell.openFailed": "開けませんでした",
-  "shell.author": "作者:木流",
   "shell.noHeadings": "見出しなし",
   "shell.editModeOn": "編集モードに入りました",
   "shell.editModeOff": "編集モードを終了しました"

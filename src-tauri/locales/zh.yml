@@ -1,6 +1,5 @@
 tray:
   show: 显示主窗口
-  check_update: 检查更新
   quit: 退出
 
 editors:
@@ -15,9 +14,6 @@ file_assoc:
   exe_path_unavailable: "无法获取程序路径: %{error}"
   registry_write_failed: "写入注册表失败: %{error}"
   registry_delete_failed: "删除注册表失败: %{error}"
-
-qq_group:
-  fallback_group_name: ①群
 
 read:
   refuse_non_text: "拒绝读取非文本文件: %{path}"
@@ -49,9 +45,3 @@ image:
 
 asset:
   allow_failed: "无法放行资源文件 %{path}: %{error}"
-
-updater:
-  download_failed: "下载失败 (HTTP %{status})"
-  cancelled: 下载已取消
-  incomplete: "下载不完整: 预期 %{expected},实际 %{actual}"
-  launch_failed: "无法启动安装程序 (错误码: %{code})"
