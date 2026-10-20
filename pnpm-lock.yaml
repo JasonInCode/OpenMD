@@ -4,13 +4,15 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+packageExtensionsChecksum: sha256-T8+LzcdxylvJ7brRqjMBE1FqkDaU8ZWGF8UFsRXMSnA=
+
 importers:
 
   .:
     dependencies:
       '@chakra-ui/react':
         specifier: ^3.28.0
-        version: 3.37.0(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 3.37.0(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@emotion/react':
         specifier: ^11.14.0
         version: 11.14.0(@types/react@19.3.0)(react@19.3.1)
@@ -46,7 +48,7 @@ importers:
         version: 0.19.0
       lucide-react:
         specifier: ^0.545.0
-        version: 0.545.0(react@19.3.1)
+        version: 0.545.0(@types/react@19.3.0)(react@19.3.1)
       markdown-it:
         specifier: ^14.1.0
         version: 14.3.3
@@ -106,7 +108,7 @@ importers:
         version: 12.2.0
       next-themes:
         specifier: ^0.4.6
-        version: 0.4.6(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 0.4.6(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       react:
         specifier: ^19.1.0
         version: 19.3.1
@@ -115,10 +117,10 @@ importers:
         version: 19.3.1(react@19.3.1)
       react-i18next:
         specifier: ^17.0.4
-        version: 17.1.0(i18next@26.5.2(typescript@5.8.3))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@5.8.3)
+        version: 17.1.0(@types/react@19.3.0)(i18next@26.5.2(typescript@5.8.3))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@5.8.3)
       react-icons:
         specifier: ^5.7.0
-        version: 5.7.0(react@19.3.1)
+        version: 5.7.0(@types/react@19.3.0)(react@19.3.1)
       turndown:
         specifier: ^7.2.4
         version: 7.2.4
@@ -206,10 +208,10 @@ importers:
         version: 19.3.1(react@19.3.1)
       react-i18next:
         specifier: ^17.0.4
-        version: 17.1.0(i18next@26.5.2(typescript@5.8.3))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@5.8.3)
+        version: 17.1.0(@types/react@19.3.0)(i18next@26.5.2(typescript@5.8.3))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@5.8.3)
       react-icons:
         specifier: ^5.7.0
-        version: 5.7.0(react@19.3.1)
+        version: 5.7.0(@types/react@19.3.0)(react@19.3.1)
     devDependencies:
       '@tauri-apps/cli':
         specifier: ^2.11.4
@@ -264,10 +266,10 @@ importers:
         version: 19.3.1(react@19.3.1)
       react-i18next:
         specifier: ^17.0.4
-        version: 17.1.0(i18next@26.5.2(typescript@5.8.3))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@5.8.3)
+        version: 17.1.0(@types/react@19.3.0)(i18next@26.5.2(typescript@5.8.3))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@5.8.3)
       react-icons:
         specifier: ^5.7.0
-        version: 5.7.0(react@19.3.1)
+        version: 5.7.0(@types/react@19.3.0)(react@19.3.1)
     devDependencies:
       '@tauri-apps/cli':
         specifier: ^2.11.4
@@ -296,6 +298,7 @@ packages:
   '@ark-ui/react@5.39.0':
     resolution: {integrity: sha512-qKMyliIHgkp4TPrdr9xmkXeP9lmuEvhRJNPNah7Wnp54lspsZJY4b08rNM+NWtlnhxO1P8iChKRKcohSQgXL/g==}
     peerDependencies:
+      '@types/react': '*'
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
 
@@ -407,6 +410,7 @@ packages:
   '@chakra-ui/hooks@2.4.6':
     resolution: {integrity: sha512-l+sWr5/QYoM2Pg8hB8GJZRs/hequyVR6eG9vMJjvPU2qVcz43FFzKn/8PHK78shCFA3V3QxeWyJDgwDJOAdBsA==}
     peerDependencies:
+      '@types/react': '*'
       react: '>=18'
 
   '@chakra-ui/react@2.10.10':
@@ -422,6 +426,7 @@ packages:
     resolution: {integrity: sha512-TaFju5LTT7GEZ8brcyZOhM7fNN54tJ/rMaMFvUAD7UE8tsUJb/j3zCUYPjchkoVXD1vinXtN9S31cp2QcOTUPg==}
     peerDependencies:
       '@emotion/react': '>=11'
+      '@types/react': '*'
       react: '>=18'
       react-dom: '>=18'
 
@@ -432,6 +437,7 @@ packages:
     resolution: {integrity: sha512-VX+zOwa1mIhvjD25FEDfh7T/mnwk03p0WQEWm5RYDOM20ePpwj4QMFwU/1zXiYwc2vZTouYLDmVBF3nJjmiPzw==}
     peerDependencies:
       '@chakra-ui/styled-system': '>=2.0.0'
+      '@types/react': '*'
 
   '@chakra-ui/theme@3.4.10':
     resolution: {integrity: sha512-iSz8dsSJqMUkABy6CO4ArPnaSkFzY+Y0z4z3sg2COyvuo0JoVXEOFvDhNsGPAa+5MT8YZEpM2aKS7dE0ZZQ2aA==}
@@ -540,6 +546,7 @@ packages:
   '@emotion/use-insertion-effect-with-fallbacks@1.2.0':
     resolution: {integrity: sha512-yJMtVdH59sxi/aVJBpk9FQq+OR8ll5GT8oWd57UpeaKEVGab41JWaCFA7FRLoMLloOZF/c/wsPoe+bfGmRKgDg==}
     peerDependencies:
+      '@types/react': '*'
       react: '>=16.8.0'
 
   '@emotion/utils@1.4.2':
@@ -1483,6 +1490,7 @@ packages:
   '@zag-js/react@1.43.3':
     resolution: {integrity: sha512-PVfq738OhicFsGOZNqrsBmdOHuh54XnIhkyJ9HSWDpzQcGHq4fuFWIvfmqW/5o/Xkj+JwFQLoIDVX/KHaUjcXA==}
     peerDependencies:
+      '@types/react': '*'
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
 
@@ -2159,6 +2167,7 @@ packages:
   lucide-react@0.545.0:
     resolution: {integrity: sha512-7r1/yUuflQDSt4f1bpn5ZAocyIxcTyVyBBChSVtBKn5M+392cPmI5YJMWOJKk/HUWGm5wg83chlAZtCcGbEZtw==}
     peerDependencies:
+      '@types/react': '*'
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   magic-string@1.4.3:
@@ -2260,6 +2269,7 @@ packages:
   next-themes@0.4.6:
     resolution: {integrity: sha512-pZvgD5L0IEvX5/9GWyHMf3m8BKiVQwsCMHfoFosXtXBMnaS0ZnIJ9ST4b4NqLVKDEm8QBxoNNGNaBv2JNF6XNA==}
     peerDependencies:
+      '@types/react': '*'
       react: ^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc
       react-dom: ^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc
 
@@ -2361,6 +2371,7 @@ packages:
   react-i18next@17.1.0:
     resolution: {integrity: sha512-4VouOnTDyvhvqXx6WZ+s3/cgSiaLutILdYkO3P1Ms+4qcKR7At+JP4Vi7IeHkVLyVV+DmN1l23Pn73UcwSGGPA==}
     peerDependencies:
+      '@types/react': '*'
       i18next: '>= 26.2.0'
       react: '>= 16.8.0'
       react-dom: '*'
@@ -2377,6 +2388,7 @@ packages:
   react-icons@5.7.0:
     resolution: {integrity: sha512-LBLy340Rzqy6+/yVhZKT3B/QpP1BZaesGqasf09HPOBzRarcDIFH0WwXlXQfE7q7ipxK4MSiC5DIBWURCny6fw==}
     peerDependencies:
+      '@types/react': '*'
       react: '*'
 
   react-is@16.13.1:
@@ -2928,9 +2940,10 @@ snapshots:
       package-manager-detector: 1.9.0
       tinyexec: 1.3.1
 
-  '@ark-ui/react@5.39.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@ark-ui/react@5.39.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@internationalized/date': 3.12.3
+      '@types/react': 19.3.0
       '@zag-js/accordion': 1.43.3
       '@zag-js/anatomy': 1.43.3
       '@zag-js/angle-slider': 1.43.3
@@ -2979,7 +2992,7 @@ snapshots:
       '@zag-js/qr-code': 1.43.3
       '@zag-js/radio-group': 1.43.3
       '@zag-js/rating-group': 1.43.3
-      '@zag-js/react': 1.43.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@zag-js/react': 1.43.3(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@zag-js/scroll-area': 1.43.3
       '@zag-js/select': 1.43.3
       '@zag-js/signature-pad': 1.43.3
@@ -3139,9 +3152,10 @@ snapshots:
 
   '@chakra-ui/anatomy@2.3.6': {}
 
-  '@chakra-ui/hooks@2.4.6(react@19.3.1)':
+  '@chakra-ui/hooks@2.4.6(@types/react@19.3.0)(react@19.3.1)':
     dependencies:
       '@chakra-ui/utils': 2.2.6(react@19.3.1)
+      '@types/react': 19.3.0
       '@zag-js/element-size': 0.31.1
       copy-to-clipboard: 3.3.3
       framesync: 6.1.2
@@ -3149,9 +3163,9 @@ snapshots:
 
   '@chakra-ui/react@2.10.10(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(framer-motion@11.18.2(@emotion/is-prop-valid@1.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@chakra-ui/hooks': 2.4.6(react@19.3.1)
+      '@chakra-ui/hooks': 2.4.6(@types/react@19.3.0)(react@19.3.1)
       '@chakra-ui/styled-system': 2.12.5(react@19.3.1)
-      '@chakra-ui/theme': 3.4.10(@chakra-ui/styled-system@2.12.5(react@19.3.1))(react@19.3.1)
+      '@chakra-ui/theme': 3.4.10(@chakra-ui/styled-system@2.12.5(react@19.3.1))(@types/react@19.3.0)(react@19.3.1)
       '@chakra-ui/utils': 2.2.6(react@19.3.1)
       '@emotion/react': 11.14.0(@types/react@19.3.0)(react@19.3.1)
       '@emotion/styled': 11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(react@19.3.1)
@@ -3167,15 +3181,16 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
 
-  '@chakra-ui/react@3.37.0(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@chakra-ui/react@3.37.0(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@ark-ui/react': 5.39.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@ark-ui/react': 5.39.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@emotion/is-prop-valid': 1.4.0
       '@emotion/react': 11.14.0(@types/react@19.3.0)(react@19.3.1)
       '@emotion/serialize': 1.3.3
-      '@emotion/use-insertion-effect-with-fallbacks': 1.2.0(react@19.3.1)
+      '@emotion/use-insertion-effect-with-fallbacks': 1.2.0(@types/react@19.3.0)(react@19.3.1)
       '@emotion/utils': 1.4.2
       '@pandacss/is-valid-prop': 1.12.1
+      '@types/react': 19.3.0
       csstype: 3.2.3
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
@@ -3187,22 +3202,24 @@ snapshots:
     transitivePeerDependencies:
       - react
 
-  '@chakra-ui/theme-tools@2.2.10(@chakra-ui/styled-system@2.12.5(react@19.3.1))(react@19.3.1)':
+  '@chakra-ui/theme-tools@2.2.10(@chakra-ui/styled-system@2.12.5(react@19.3.1))(@types/react@19.3.0)(react@19.3.1)':
     dependencies:
       '@chakra-ui/anatomy': 2.3.6
       '@chakra-ui/styled-system': 2.12.5(react@19.3.1)
       '@chakra-ui/utils': 2.2.6(react@19.3.1)
+      '@types/react': 19.3.0
       color2k: 2.0.4
     transitivePeerDependencies:
       - react
 
-  '@chakra-ui/theme@3.4.10(@chakra-ui/styled-system@2.12.5(react@19.3.1))(react@19.3.1)':
+  '@chakra-ui/theme@3.4.10(@chakra-ui/styled-system@2.12.5(react@19.3.1))(@types/react@19.3.0)(react@19.3.1)':
     dependencies:
       '@chakra-ui/anatomy': 2.3.6
       '@chakra-ui/styled-system': 2.12.5(react@19.3.1)
-      '@chakra-ui/theme-tools': 2.2.10(@chakra-ui/styled-system@2.12.5(react@19.3.1))(react@19.3.1)
+      '@chakra-ui/theme-tools': 2.2.10(@chakra-ui/styled-system@2.12.5(react@19.3.1))(@types/react@19.3.0)(react@19.3.1)
       '@chakra-ui/utils': 2.2.6(react@19.3.1)
     transitivePeerDependencies:
+      - '@types/react'
       - react
 
   '@chakra-ui/utils@2.2.6(react@19.3.1)':
@@ -3288,7 +3305,7 @@ snapshots:
       '@emotion/babel-plugin': 11.13.5
       '@emotion/cache': 11.14.0
       '@emotion/serialize': 1.3.3
-      '@emotion/use-insertion-effect-with-fallbacks': 1.2.0(react@19.3.1)
+      '@emotion/use-insertion-effect-with-fallbacks': 1.2.0(@types/react@19.3.0)(react@19.3.1)
       '@emotion/utils': 1.4.2
       '@emotion/weak-memoize': 0.4.0
       hoist-non-react-statics: 3.3.2
@@ -3315,7 +3332,7 @@ snapshots:
       '@emotion/is-prop-valid': 1.4.0
       '@emotion/react': 11.14.0(@types/react@19.3.0)(react@19.3.1)
       '@emotion/serialize': 1.3.3
-      '@emotion/use-insertion-effect-with-fallbacks': 1.2.0(react@19.3.1)
+      '@emotion/use-insertion-effect-with-fallbacks': 1.2.0(@types/react@19.3.0)(react@19.3.1)
       '@emotion/utils': 1.4.2
       react: 19.3.1
     optionalDependencies:
@@ -3325,8 +3342,9 @@ snapshots:
 
   '@emotion/unitless@0.10.0': {}
 
-  '@emotion/use-insertion-effect-with-fallbacks@1.2.0(react@19.3.1)':
+  '@emotion/use-insertion-effect-with-fallbacks@1.2.0(@types/react@19.3.0)(react@19.3.1)':
     dependencies:
+      '@types/react': 19.3.0
       react: 19.3.1
 
   '@emotion/utils@1.4.2': {}
@@ -4292,8 +4310,9 @@ snapshots:
       '@zag-js/types': 1.43.3
       '@zag-js/utils': 1.43.3
 
-  '@zag-js/react@1.43.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@zag-js/react@1.43.3(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
+      '@types/react': 19.3.0
       '@zag-js/core': 1.43.3
       '@zag-js/store': 1.43.3
       '@zag-js/types': 1.43.3
@@ -5049,8 +5068,9 @@ snapshots:
     dependencies:
       yallist: 3.1.1
 
-  lucide-react@0.545.0(react@19.3.1):
+  lucide-react@0.545.0(@types/react@19.3.0)(react@19.3.1):
     dependencies:
+      '@types/react': 19.3.0
       react: 19.3.1
 
   magic-string@1.4.3:
@@ -5096,7 +5116,9 @@ snapshots:
 
   markdown-it-task-lists@2.1.1: {}
 
-  markdown-it-texmath@1.0.0: {}
+  markdown-it-texmath@1.0.0:
+    dependencies:
+      katex: 0.19.0
 
   markdown-it@14.3.3:
     dependencies:
@@ -5149,8 +5171,9 @@ snapshots:
 
   nanoid@3.3.20: {}
 
-  next-themes@0.4.6(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
+  next-themes@0.4.6(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
     dependencies:
+      '@types/react': 19.3.0
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
 
@@ -5242,9 +5265,10 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.3.0
 
-  react-i18next@17.1.0(i18next@26.5.2(typescript@5.8.3))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@5.8.3):
+  react-i18next@17.1.0(@types/react@19.3.0)(i18next@26.5.2(typescript@5.8.3))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@5.8.3):
     dependencies:
       '@babel/runtime': 7.29.10
+      '@types/react': 19.3.0
       html-parse-stringify: 4.0.1
       i18next: 26.5.2(typescript@5.8.3)
       react: 19.3.1
@@ -5253,8 +5277,9 @@ snapshots:
       react-dom: 19.3.1(react@19.3.1)
       typescript: 5.8.3
 
-  react-icons@5.7.0(react@19.3.1):
+  react-icons@5.7.0(@types/react@19.3.0)(react@19.3.1):
     dependencies:
+      '@types/react': 19.3.0
       react: 19.3.1
 
   react-is@16.13.1: {}
