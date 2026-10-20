@@ -42,6 +42,21 @@ function isMarkdownPath(p: string): boolean {
   return MARKDOWN_EXTENSIONS.includes(ext);
 }
 
+/**
+ * 取走 Rust 侧积压的打开请求并打开。前端是队列的唯一消费者:事件只是敲门声,
+ * 真正的路径一律从 `getOpenedFiles` 取,所以漏掉一次事件最多晚一个敲门周期。
+ */
+async function drainOpenedFiles(): Promise<void> {
+  if (!inTauri) return;
+  const paths = await getOpenedFiles().catch((e) => {
+    void logAssoc(`getOpenedFiles FAILED: ${e}`);
+    return [];
+  });
+  if (paths.length === 0) return;
+  void logAssoc(`drained ${paths.length} pending: ${paths.join(", ")}`);
+  await openStandaloneFiles(paths);
+}
+
 export default function App() {
   const { t } = useTranslation();
   const tabs = useTabs((s) => s.tabs);
@@ -149,15 +164,8 @@ export default function App() {
   useEffect(() => {
     if (restoredRef.current) return;
     restoredRef.current = true;
-    (async () => {
-      if (inTauri) {
-        const buffered = await getOpenedFiles().catch((e) => {
-          void logAssoc(`startup getOpenedFiles FAILED: ${e}`);
-          return [];
-        });
-        void logAssoc(`startup drained ${buffered.length} buffered: ${buffered.join(", ")}`);
-        await openStandaloneFiles(buffered);
-      }
+    void (async () => {
+      await drainOpenedFiles();
       setStartupReady(true);
     })();
   }, []);
@@ -183,9 +191,8 @@ export default function App() {
         }, COALESCE_MS),
       );
     });
-    const unlistenOpened = onOpenedFiles((paths) => {
-      void logAssoc(`frontend opened-files event: ${paths.join(", ")}`);
-      void openStandaloneFiles(paths);
+    const unlistenOpened = onOpenedFiles(() => {
+      void drainOpenedFiles();
     });
     // 工作区目录树的外部变更(store 内部有拖尾合并,重拉展开目录)
     const unlistenWorkspace = onWorkspaceChanged(({ path }) => {

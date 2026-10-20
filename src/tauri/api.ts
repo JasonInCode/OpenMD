@@ -66,13 +66,19 @@ export function onFileChanged(handler: (payload: FileChangedPayload) => void) {
   );
 }
 
-export function onOpenedFiles(handler: (paths: string[]) => void) {
-  return listen<string[]>("opened-files", (event) => handler(event.payload)).catch(
-    () => () => {},
-  );
+/**
+ * Rust 敲门前端来取队列。事件不带路径:打开请求可能早于 webview 就绪到达,
+ * 而 Tauri 在没有 JS 监听器的 webview 上会静默跳过投递,只有队列里的路径是
+ * 可靠的,所以回调里必须去 `getOpenedFiles` 取。
+ */
+export function onOpenedFiles(handler: () => void) {
+  return listen("opened-files", () => handler()).catch((e) => {
+    void logAssoc(`listen opened-files FAILED: ${e}`);
+    return () => {};
+  });
 }
 
-/** Paths buffered by the Rust side before the webview was ready. */
+/** 取走 Rust 侧积压的打开请求(启动时取一次,之后每次被敲门都取)。 */
 export async function getOpenedFiles(): Promise<string[]> {
   return invoke("get_opened_files");
 }
