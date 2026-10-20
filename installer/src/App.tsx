@@ -13,6 +13,7 @@ export default function App() {
   const [dirValid, setDirValid] = useState(false);
   const [createDesktopShortcut, setCreateDesktopShortcut] = useState(true);
   const [associateMd, setAssociateMd] = useState(true);
+  const [folderVerb, setFolderVerb] = useState(true);
   const [defaultDir, setDefaultDir] = useState("");
   const [isExisting, setIsExisting] = useState(false);
   const [ready, setReady] = useState(false);
@@ -94,6 +95,8 @@ export default function App() {
             createDesktopShortcut={createDesktopShortcut}
             onAssociateChange={setAssociateMd}
             associateMd={associateMd}
+            onFolderVerbChange={setFolderVerb}
+            folderVerb={folderVerb}
             onInstall={handleInstallFromCustom}
             onBack={handleBackToMode}
           />
@@ -103,6 +106,7 @@ export default function App() {
             targetDir={targetDir}
             createDesktopShortcut={createDesktopShortcut}
             associateMd={associateMd}
+            folderVerb={folderVerb}
             onComplete={handleInstallComplete}
             onError={handleInstallError}
           />

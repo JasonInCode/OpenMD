@@ -16,6 +16,7 @@ dist-ssr
 # Rust / Tauri
 src-tauri/target
 src-tauri/gen/schemas
+crates/openmd-shell-verb/target
 installer/src-tauri/gen/schemas
 uninstaller/src-tauri/gen/schemas
 

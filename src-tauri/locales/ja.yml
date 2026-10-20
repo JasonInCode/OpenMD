@@ -18,7 +18,6 @@ file_assoc:
   exe_path_unavailable: "実行ファイルのパスを取得できません: %{error}"
   registry_write_failed: "レジストリの書き込みに失敗しました: %{error}"
   registry_delete_failed: "レジストリキーの削除に失敗しました: %{error}"
-  registry_value_delete_failed: "レジストリ値の削除に失敗しました: %{error}"
   windows_only: Windows のみ対応
 
 qq_group:

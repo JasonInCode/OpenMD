@@ -33,7 +33,16 @@ if (Test-Path $mdIcon) {
     Write-Warning "  [WARN] md-file.ico not found (skipping)"
 }
 
-# 3. Uninstaller (cargo package name: uninstOpenMD)
+# 3. Folder context menu icon (expected in install dir by register_folder_verb)
+$appIcon = "$MainProject\src-tauri\icons\icon.ico"
+if (Test-Path $appIcon) {
+    Copy-Item $appIcon $TempDir\
+    Write-Host "  [OK] icon.ico"
+} else {
+    Write-Warning "  [WARN] icon.ico not found (folder context menu will show without an icon)"
+}
+
+# 4. Uninstaller (cargo package name: uninstOpenMD)
 $uninstExe = "$UninstallerProject\src-tauri\target\release\uninstOpenMD.exe"
 if (Test-Path $uninstExe) {
     Copy-Item $uninstExe $TempDir\
@@ -42,7 +51,7 @@ if (Test-Path $uninstExe) {
     Write-Warning "  [WARN] uninstOpenMD.exe not found (build uninstaller first)"
 }
 
-# 4. Create ZIP
+# 5. Create ZIP
 Write-Host "`nCompressing payload..." -ForegroundColor Cyan
 if (Test-Path $PayloadZip) {
     Remove-Item $PayloadZip -Force

@@ -303,65 +303,27 @@ pub fn launch_installed_app(target_dir: String) -> Result<(), String> {
     Ok(())
 }
 
-// === File association (install-time) ===
+// === Shell integration (install-time) ===
+//
+// 图标已随 payload 解压到安装目录,注册项直接指向安装目录内的文件。
+// 注册表读写在 `openmd-shell-verb`,与主程序的设置开关共用同一份实现。
 
-const MD_PROG_ID: &str = "OpenMD.Markdown";
-const MD_EXTENSIONS: [&str; 4] = [".md", ".markdown", ".mdown", ".mkd"];
-
-/// 安装时注册文件关联:md-file.ico 已随 payload 解压到安装目录,
-/// DefaultIcon 指向它;打开命令指向安装目录内的 openmd.exe。
+/// 注册 Markdown 文件关联:`.md` 等扩展名双击时用 OpenMD 打开。
 #[tauri::command]
 pub fn associate_md_files(install_dir: String) -> Result<(), String> {
     let exe = Path::new(&install_dir).join("openmd.exe");
-    let ico = Path::new(&install_dir).join("md-file.ico");
-
-    let classes = RegKey::predef(HKEY_CURRENT_USER)
-        .open_subkey_with_flags("Software\\Classes", KEY_READ | KEY_WRITE)
-        .map_err(|e| format!("打开注册表失败: {e}"))?;
-
-    let (prog, _) = classes
-        .create_subkey(MD_PROG_ID)
-        .map_err(|e| format!("写入注册表失败: {e}"))?;
-    prog.set_value("", &"OpenMD Markdown 文档")
-        .map_err(|e| e.to_string())?;
-    prog.create_subkey("DefaultIcon")
-        .map_err(|e| format!("写入注册表失败: {e}"))?
-        .0
-        .set_value("", &format!("\"{}\",0", ico.display()))
-        .map_err(|e| e.to_string())?;
-    prog.create_subkey("shell\\open\\command")
-        .map_err(|e| format!("写入注册表失败: {e}"))?
-        .0
-        .set_value("", &format!("\"{}\" \"%1\"", exe.display()))
-        .map_err(|e| e.to_string())?;
-
-    for ext in MD_EXTENSIONS {
-        let (key, _) = classes
-            .create_subkey(ext)
-            .map_err(|e| format!("写入注册表失败: {e}"))?;
-        key.set_value("", &MD_PROG_ID).map_err(|e| e.to_string())?;
-    }
-
-    notify_shell_changed();
-    Ok(())
+    let icon = Path::new(&install_dir).join("md-file.ico");
+    openmd_shell_verb::register_md(&exe, &icon).map_err(|e| format!("写入注册表失败: {e}"))
 }
 
-/// 通知 Shell 刷新图标/关联缓存
-#[cfg(target_os = "windows")]
-fn notify_shell_changed() {
-    unsafe {
-        use windows_sys::Win32::UI::Shell::{SHChangeNotify, SHCNE_ASSOCCHANGED, SHCNF_IDLIST};
-        SHChangeNotify(
-            SHCNE_ASSOCCHANGED as i32,
-            SHCNF_IDLIST,
-            std::ptr::null(),
-            std::ptr::null(),
-        );
-    }
+/// 在资源管理器的文件夹右键菜单里加上「Open with OpenMD」。
+#[tauri::command]
+pub fn register_folder_verb(install_dir: String) -> Result<(), String> {
+    let exe = Path::new(&install_dir).join("openmd.exe");
+    let icon = Path::new(&install_dir).join("icon.ico");
+    openmd_shell_verb::register_folder_verb(&exe, &icon)
+        .map_err(|e| format!("写入注册表失败: {e}"))
 }
-
-#[cfg(not(target_os = "windows"))]
-fn notify_shell_changed() {}
 
 // === Payload extraction ===
 

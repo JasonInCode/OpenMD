@@ -146,7 +146,7 @@ export function onFileChanged(handler: (payload: FileChangedPayload) => void) {
 /**
  * Rust 敲门前端来取队列。事件不带路径:打开请求可能早于 webview 就绪到达,
  * 而 Tauri 在没有 JS 监听器的 webview 上会静默跳过投递,只有队列里的路径是
- * 可靠的,所以回调里必须去 `getOpenedFiles` 取。
+ * 可靠的,所以回调里必须去 `getOpenedPaths` 取。
  */
 export function onOpenedFiles(handler: () => void) {
   return listen("opened-files", () => handler()).catch((e) => {
@@ -155,9 +155,23 @@ export function onOpenedFiles(handler: () => void) {
   });
 }
 
+/** 文件夹右键菜单的敲门。与 `opened-files` 同理不带路径,路径同样只认队列。 */
+export function onOpenedFolders(handler: () => void) {
+  return listen("opened-folders", () => handler()).catch((e) => {
+    void logAssoc(`listen opened-folders FAILED: ${e}`);
+    return () => {};
+  });
+}
+
+/** OS 在 webview 就绪前交过来的路径,按类型分开。 */
+export interface OpenedPaths {
+  files: string[];
+  folders: string[];
+}
+
 /** 取走 Rust 侧积压的打开请求(启动时取一次,之后每次被敲门都取)。 */
-export async function getOpenedFiles(): Promise<string[]> {
-  return invoke("get_opened_files");
+export async function getOpenedPaths(): Promise<OpenedPaths> {
+  return invoke("get_opened_paths");
 }
 
 /** Native open-file dialog. Returns absolute paths, or null on cancel. */
@@ -286,7 +300,7 @@ export async function openFileWith(exe: string, path: string): Promise<void> {
   return invoke("open_file_with", { exe, path });
 }
 
-// ---- 运行时文件关联(.md 等扩展名 → OpenMD,HKCU 注册表) ----
+// ---- 运行时资源管理器集成(HKCU 注册表:文件关联 + 文件夹右键菜单) ----
 
 export async function isMdAssociated(): Promise<boolean> {
   return invoke("is_md_associated");
@@ -298,6 +312,19 @@ export async function registerMdAssociation(): Promise<void> {
 
 export async function unregisterMdAssociation(): Promise<void> {
   return invoke("unregister_md_association");
+}
+
+/** Whether the folder context menu verb still points at this executable. */
+export async function isFolderVerbRegistered(): Promise<boolean> {
+  return invoke("is_folder_verb_registered");
+}
+
+export async function registerFolderVerb(): Promise<void> {
+  return invoke("register_folder_verb");
+}
+
+export async function unregisterFolderVerb(): Promise<void> {
+  return invoke("unregister_folder_verb");
 }
 
 /** 诊断日志(排查双击 .md 打不开) */

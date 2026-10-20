@@ -29,8 +29,8 @@ import {
   Sun,
 } from "lucide-react";
 import { useSettings, MAX_CONTENT_PADDING } from "../stores/settings";
-import { useWorkspace } from "../stores/workspace";
 import { openFolderDialog, openFileDialog } from "../tauri/api";
+import { openFolderAsWorkspace } from "../lib/openFolderAsWorkspace";
 import { openStandaloneFiles } from "../lib/openStandaloneFiles";
 import { isDirty, useTabs } from "../stores/tabs";
 import { withViewTransition } from "../utils/viewTransition";
@@ -73,7 +73,6 @@ export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void 
     editMode,
     toggleEditMode,
   } = useSettings();
-  const openPaths = useTabs((s) => s.openPath);
   const activeTab = useTabs((s) => s.tabs.find((x) => x.id === s.activeId));
   const saveTab = useTabs((s) => s.saveTab);
   // 编辑/保存属于「当前文档」:无打开的文档时不显示(首页不渲染顶栏,这里仅作兜底)。
@@ -199,9 +198,7 @@ export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void 
       return null;
     });
     if (!picked) return;
-    // 选完文件夹直接进预览页(有文档就打开第一篇),而不是只把树塞进侧栏。
-    const { firstDoc } = await useWorkspace.getState().openFolder(picked);
-    if (firstDoc) await openPaths(firstDoc);
+    await openFolderAsWorkspace(picked);
   };
   const handleTocButton = () => {
     if (tocOpen && sidebarTab === "files") {

@@ -18,7 +18,6 @@ file_assoc:
   exe_path_unavailable: "Cannot get the executable path: %{error}"
   registry_write_failed: "Failed to write the registry: %{error}"
   registry_delete_failed: "Failed to delete the registry key: %{error}"
-  registry_value_delete_failed: "Failed to delete the registry value: %{error}"
   windows_only: Windows only
 
 qq_group:

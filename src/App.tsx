@@ -25,9 +25,10 @@ import { openStandaloneFiles } from "./lib/openStandaloneFiles";
 import { IS_MAIN_WINDOW, closeWindow } from "./lib/window";
 import { measureInsertion } from "./lib/tabDrop";
 import { watchChipDrag } from "./lib/tabDrag";
+import { openFolderAsWorkspace } from "./lib/openFolderAsWorkspace";
 import { viewInAnimation } from "./theme/theme";
 import {
-  getOpenedFiles,
+  getOpenedPaths,
   isDirectory,
   logAssoc,
   MARKDOWN_EXTENSIONS,
@@ -35,6 +36,7 @@ import {
   onOpenedFiles,
   onTabDragSettled,
   onTabDrop,
+  onOpenedFolders,
   onWorkspaceChanged,
   openFileDialog,
   openFolderDialog,
@@ -47,6 +49,23 @@ const inTauri = "__TAURI_INTERNALS__" in window;
 function isMarkdownPath(p: string): boolean {
   const ext = p.split(".").pop()?.toLowerCase() ?? "";
   return MARKDOWN_EXTENSIONS.includes(ext);
+}
+
+/**
+ * 取走 Rust 侧积压的打开请求并打开。前端是队列的唯一消费者:事件只是敲门声,
+ * 真正的路径一律从 `getOpenedPaths` 取,所以漏掉一次事件最多晚一个敲门周期。
+ * 文件开成文档标签,文件夹开成工作区——与拖拽入口走同一套处理。
+ */
+async function drainOpenedPaths(): Promise<void> {
+  if (!inTauri) return;
+  const buffered = await getOpenedPaths().catch((e) => {
+    void logAssoc(`getOpenedPaths FAILED: ${e}`);
+    return { files: [], folders: [] };
+  });
+  if (buffered.files.length === 0 && buffered.folders.length === 0) return;
+  void logAssoc(`drained ${buffered.files.length} files, ${buffered.folders.length} folders`);
+  await openStandaloneFiles(buffered.files);
+  for (const folder of buffered.folders) await openFolderAsWorkspace(folder);
 }
 
 export default function App() {
@@ -177,14 +196,7 @@ export default function App() {
           setGhost(pending.ghost);
         }
         // 系统"打开方式"的缓冲只有主窗口该排空:新窗口排空了会把待打开的文件抢走。
-        if (IS_MAIN_WINDOW) {
-          const buffered = await getOpenedFiles().catch((e) => {
-            void logAssoc(`startup getOpenedFiles FAILED: ${e}`);
-            return [];
-          });
-          void logAssoc(`startup drained ${buffered.length} buffered: ${buffered.join(", ")}`);
-          await openStandaloneFiles(buffered);
-        }
+        if (IS_MAIN_WINDOW) await drainOpenedPaths();
       }
       setStartupReady(true);
     })();
@@ -211,9 +223,12 @@ export default function App() {
         }, COALESCE_MS),
       );
     });
-    const unlistenOpened = onOpenedFiles((paths) => {
-      void logAssoc(`frontend opened-files event: ${paths.join(", ")}`);
-      void openStandaloneFiles(paths);
+    const unlistenOpened = onOpenedFiles(() => {
+      void drainOpenedPaths();
+    });
+    // 资源管理器里右键文件夹「Open with OpenMD」:打开为工作区。
+    const unlistenFolders = onOpenedFolders(() => {
+      void drainOpenedPaths();
     });
     // 工作区目录树的外部变更(store 内部有拖尾合并,重拉展开目录)
     const unlistenWorkspace = onWorkspaceChanged(({ path }) => {
@@ -222,6 +237,7 @@ export default function App() {
     return () => {
       unlistenFileChanged.then((fn) => fn());
       unlistenOpened.then((fn) => fn());
+      unlistenFolders.then((fn) => fn());
       unlistenWorkspace.then((fn) => fn());
     };
   }, [refreshPath]);

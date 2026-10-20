@@ -18,7 +18,6 @@ file_assoc:
   exe_path_unavailable: "無法取得程式路徑: %{error}"
   registry_write_failed: "寫入登錄檔失敗: %{error}"
   registry_delete_failed: "刪除登錄檔機碼失敗: %{error}"
-  registry_value_delete_failed: "刪除登錄檔值失敗: %{error}"
   windows_only: 僅支援 Windows
 
 qq_group:

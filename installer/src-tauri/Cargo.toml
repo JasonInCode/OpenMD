@@ -20,6 +20,7 @@ panic = "abort"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+openmd-shell-verb = { path = "../../crates/openmd-shell-verb" }
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-shell = "2"
@@ -29,9 +30,6 @@ winreg = "0.52"
 dirs = "5"
 zip = "2"
 mslnk = "0.1"
-
-[target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_UI_Shell"] }
 
 # MSVC link.exe 的本地化提示（如"正在创建库..."）会被透传为警告，这里关闭
 [lints.rust]

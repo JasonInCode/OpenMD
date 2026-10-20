@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 interface InstallingPageProps {
   associateMd: boolean;
+  folderVerb: boolean;
   targetDir: string;
   createDesktopShortcut: boolean;
   onComplete: () => void;
@@ -14,6 +15,7 @@ export default function InstallingPage({
   targetDir,
   createDesktopShortcut,
   associateMd,
+  folderVerb,
   onComplete,
   onError,
 }: InstallingPageProps) {
@@ -39,6 +41,10 @@ export default function InstallingPage({
 
         if (associateMd) {
           await invoke("associate_md_files", { installDir: targetDir });
+        }
+
+        if (folderVerb) {
+          await invoke("register_folder_verb", { installDir: targetDir });
         }
 
         for (let i = 70; i <= 85; i += 3) {

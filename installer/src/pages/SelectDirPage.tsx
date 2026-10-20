@@ -10,6 +10,8 @@ interface SelectDirPageProps {
   createDesktopShortcut?: boolean;
   onAssociateChange?: (associate: boolean) => void;
   associateMd?: boolean;
+  onFolderVerbChange?: (enabled: boolean) => void;
+  folderVerb?: boolean;
   onInstall: () => void;
   onBack: () => void;
 }
@@ -23,7 +25,7 @@ function formatSize(bytes: number): string {
   return bytes + " B";
 }
 
-export default function SelectDirPage({ onDirChange, onValidChange, onShortcutChange, createDesktopShortcut = true, onAssociateChange, associateMd = true, onInstall, onBack }: SelectDirPageProps) {
+export default function SelectDirPage({ onDirChange, onValidChange, onShortcutChange, createDesktopShortcut = true, onAssociateChange, associateMd = true, onFolderVerbChange, folderVerb = true, onInstall, onBack }: SelectDirPageProps) {
   const { t } = useTranslation();
   const [dir, setDir] = useState("");
   const [available, setAvailable] = useState<number>(-1);
@@ -134,6 +136,15 @@ export default function SelectDirPage({ onDirChange, onValidChange, onShortcutCh
           />
           <span className="checkbox-mark" />
           {t("dir_associate_md")}
+        </label>
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={folderVerb}
+            onChange={(e) => onFolderVerbChange?.(e.target.checked)}
+          />
+          <span className="checkbox-mark" />
+          {t("dir_folder_context_menu")}
         </label>
       </div>
 

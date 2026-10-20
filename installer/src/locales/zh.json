@@ -115,6 +115,7 @@
   "dir_required": "所需空间",
   "dir_shortcut": "创建桌面快捷方式",
   "dir_associate_md": "关联 .md 文件",
+  "dir_folder_context_menu": "文件夹右键菜单",
 
   "install_title": "正在安装",
   "install_desc": "正在安装OpenMD，请稍候...",

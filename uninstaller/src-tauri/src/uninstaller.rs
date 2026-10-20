@@ -25,36 +25,11 @@ fn normalize_path(p: &str) -> String {
     p.trim().trim_end_matches(|c| c == '\\' || c == '/').to_lowercase()
 }
 
-const MD_PROG_ID: &str = "OpenMD.Markdown";
-const MD_EXTENSIONS: [&str; 4] = [".md", ".markdown", ".mdown", ".mkd"];
-
-/// 反注册文件关联:删除 ProgID 子树;扩展名默认值仅在仍指向我们时删除
-fn unregister_file_association() -> Result<(), String> {
-    let classes = RegKey::predef(HKEY_CURRENT_USER)
-        .open_subkey_with_flags("Software\\Classes", KEY_READ | KEY_WRITE)
-        .map_err(|e| format!("打开注册表失败: {e}"))?;
-
-    let _ = classes.delete_subkey_all(MD_PROG_ID);
-    for ext in MD_EXTENSIONS {
-        if let Ok(key) = classes.open_subkey_with_flags(ext, KEY_READ | KEY_WRITE) {
-            let v: String = key.get_value("").unwrap_or_default();
-            if v == MD_PROG_ID {
-                let _ = key.delete_value("");
-            }
-        }
-    }
-
-    #[cfg(target_os = "windows")]
-    unsafe {
-        use windows_sys::Win32::UI::Shell::{SHChangeNotify, SHCNE_ASSOCCHANGED, SHCNF_IDLIST};
-        SHChangeNotify(
-            SHCNE_ASSOCCHANGED as i32,
-            SHCNF_IDLIST,
-            std::ptr::null(),
-            std::ptr::null(),
-        );
-    }
-    Ok(())
+/// 反注册资源管理器集成:Markdown 文件关联与文件夹右键菜单项。
+/// 与主程序、安装器共用 `openmd-shell-verb`,三处写的是同一批注册表键。
+fn unregister_shell_integration() -> Result<(), String> {
+    openmd_shell_verb::unregister_folder_verb().map_err(|e| format!("删除注册表失败: {e}"))?;
+    openmd_shell_verb::unregister_md().map_err(|e| format!("删除注册表失败: {e}"))
 }
 
 /// 判断目录是否为系统关键目录（盘根、Windows、Program Files、用户目录等）。
@@ -151,9 +126,9 @@ pub fn start_uninstall() -> Result<UninstallProgress, String> {
     delete_shortcut("OpenMD", "Desktop")
         .map_err(|e| eprintln!("删除桌面快捷方式失败: {}", e)).ok();
 
-    // 3.5 反注册文件关联(ProgID + 扩展名默认值)
-    unregister_file_association()
-        .map_err(|e| eprintln!("反注册文件关联失败: {}", e)).ok();
+    // 3.5 反注册资源管理器集成(.md 关联 + 文件夹右键菜单)
+    unregister_shell_integration()
+        .map_err(|e| eprintln!("反注册资源管理器集成失败: {}", e)).ok();
 
     // 4. Delete registry entry
     unregister_uninstall()

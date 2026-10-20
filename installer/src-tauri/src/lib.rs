@@ -57,6 +57,7 @@ pub fn run() {
             get_resource_files,
             install,
             associate_md_files,
+            register_folder_verb,
             cancel_install,
             launch_installed_app,
             get_app_version,

@@ -37,7 +37,7 @@ import {
 import { useSettings, MAX_BACKGROUND_BLUR, type Language } from "../stores/settings";
 import { useUpdate } from "../stores/update";
 import { IS_STORE_BUILD } from "../lib/build-flags";
-import { isMdAssociated, openImageDialog, registerMdAssociation, unregisterMdAssociation } from "../tauri/api";
+import { isFolderVerbRegistered, isMdAssociated, openImageDialog, registerFolderVerb, registerMdAssociation, unregisterFolderVerb, unregisterMdAssociation } from "../tauri/api";
 import { useBackgroundSrc } from "../lib/useBackgroundSrc";
 import { useOverlayBlur } from "../lib/overlayBlur";
 import { FloatingScrollbar } from "./FloatingScrollbar";
@@ -59,21 +59,77 @@ const visibleSections = SECTIONS.filter(
   (s) => !(IS_STORE_BUILD && (s.id === "sponsor" || s.id === "qq")),
 );
 
+/** 「名称 + 当前状态 + 操作按钮」一行。文件关联与右键菜单两个开关共用。 */
+function ToggleRow({
+  label,
+  on,
+  busy,
+  statusOn,
+  statusOff,
+  actionOn,
+  actionOff,
+  onToggle,
+}: {
+  label: string;
+  on: boolean;
+  busy: boolean;
+  statusOn: string;
+  statusOff: string;
+  /** 已开启时点击按钮的操作 */
+  actionOn: string;
+  /** 未开启时点击按钮的操作 */
+  actionOff: string;
+  onToggle: () => void;
+}) {
+  return (
+    <Flex
+      justify="space-between"
+      align="center"
+      gap={6}
+      py={3}
+      borderBottomWidth="1px"
+      borderColor="border.subtle"
+    >
+      <Text fontSize="sm" color="fg.muted" flexShrink={0}>
+        {label}
+      </Text>
+      <HStack gap={3}>
+        <Text fontSize="sm">{on ? statusOn : statusOff}</Text>
+        <Button
+          size="xs"
+          variant={on ? "outline" : "subtle"}
+          borderColor="border.subtle"
+          disabled={busy}
+          onClick={onToggle}
+        >
+          {on ? actionOn : actionOff}
+        </Button>
+      </HStack>
+    </Flex>
+  );
+}
+
 function GeneralSection() {
   const { t } = useTranslation();
   // 文件关联状态:null = 未知/浏览器预览(不渲染该行)
   const [assoc, setAssoc] = useState<boolean | null>(null);
   const [assocBusy, setAssocBusy] = useState(false);
+  // 文件夹右键菜单:同样只存在于 Windows,商店版下注册表写入被虚拟化
+  const [folderVerb, setFolderVerb] = useState<boolean | null>(null);
+  const [folderVerbBusy, setFolderVerbBusy] = useState(false);
   // 关闭窗口行为(与关闭询问对话框的"不再提醒"共用一个设置)
   const { closeAction, setCloseAction } = useSettings();
 
   useEffect(() => {
     // 商店版(MSIX)下注册表写入被虚拟化,开关无效:文件关联由
-    // AppxManifest 的 fileTypeAssociation 声明,这里不再查询/渲染该行。
+    // AppxManifest 的 fileTypeAssociation 声明,这里不再查询/渲染这些行。
     if (IS_STORE_BUILD) return;
     isMdAssociated()
       .then(setAssoc)
       .catch(() => setAssoc(null));
+    isFolderVerbRegistered()
+      .then(setFolderVerb)
+      .catch(() => setFolderVerb(null));
   }, []);
 
   const toggleAssociation = async () => {
@@ -89,6 +145,22 @@ function GeneralSection() {
       console.error("文件关联操作失败:", e);
     } finally {
       setAssocBusy(false);
+    }
+  };
+
+  const toggleFolderVerb = async () => {
+    setFolderVerbBusy(true);
+    try {
+      if (folderVerb) {
+        await unregisterFolderVerb();
+      } else {
+        await registerFolderVerb();
+      }
+      setFolderVerb(!folderVerb);
+    } catch (e) {
+      console.error("右键菜单操作失败:", e);
+    } finally {
+      setFolderVerbBusy(false);
     }
   };
 
@@ -126,30 +198,28 @@ function GeneralSection() {
         </HStack>
       </Flex>
       {assoc !== null && (
-        <Flex
-          justify="space-between"
-          align="center"
-          gap={6}
-          py={3}
-          borderBottomWidth="1px"
-          borderColor="border.subtle"
-        >
-          <Text fontSize="sm" color="fg.muted" flexShrink={0}>
-            {t("settings.general.fileAssociation")}
-          </Text>
-          <HStack gap={3}>
-            <Text fontSize="sm">{assoc ? t("settings.general.associated") : t("settings.general.notAssociated")}</Text>
-            <Button
-              size="xs"
-              variant={assoc ? "outline" : "subtle"}
-              borderColor="border.subtle"
-              disabled={assocBusy}
-              onClick={() => void toggleAssociation()}
-            >
-              {assoc ? t("settings.general.disassociate") : t("settings.general.setDefault")}
-            </Button>
-          </HStack>
-        </Flex>
+        <ToggleRow
+          label={t("settings.general.fileAssociation")}
+          on={assoc}
+          busy={assocBusy}
+          statusOn={t("settings.general.associated")}
+          statusOff={t("settings.general.notAssociated")}
+          actionOn={t("settings.general.disassociate")}
+          actionOff={t("settings.general.setDefault")}
+          onToggle={() => void toggleAssociation()}
+        />
+      )}
+      {folderVerb !== null && (
+        <ToggleRow
+          label={t("settings.general.folderContextMenu")}
+          on={folderVerb}
+          busy={folderVerbBusy}
+          statusOn={t("settings.general.enabled")}
+          statusOff={t("settings.general.notEnabled")}
+          actionOn={t("settings.general.disable")}
+          actionOff={t("settings.general.enable")}
+          onToggle={() => void toggleFolderVerb()}
+        />
       )}
     </VStack>
   );

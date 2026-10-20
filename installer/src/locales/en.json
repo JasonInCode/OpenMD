@@ -115,6 +115,7 @@
   "dir_required": "Required Space",
   "dir_shortcut": "Create desktop shortcut",
   "dir_associate_md": "Associate .md files",
+  "dir_folder_context_menu": "Folder right-click menu",
 
   "install_title": "Installing",
   "install_desc": "Please wait while OpenMD is being installed...",

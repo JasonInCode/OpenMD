@@ -3,11 +3,10 @@ import { Box, Button, Flex, HStack, IconButton, Text, VStack } from "@chakra-ui/
 import { FileText, FolderOpen, FolderTree, Settings, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
-import { useTabs } from "../stores/tabs";
 import { useRecent, type RecentFile } from "../stores/recent";
-import { useWorkspace } from "../stores/workspace";
 import { useSettings } from "../stores/settings";
 import { openFolderDialog, openFileDialog } from "../tauri/api";
+import { openFolderAsWorkspace } from "../lib/openFolderAsWorkspace";
 import { openStandaloneFiles } from "../lib/openStandaloneFiles";
 import { viewInAnimation } from "../theme/theme";
 import { FloatingScrollbar } from "./FloatingScrollbar";
@@ -30,7 +29,6 @@ function dirOf(path: string): string {
 export function EmptyState() {
   const { t } = useTranslation();
   const { resolvedTheme } = useTheme();
-  const openPaths = useTabs((s) => s.openPath);
   const recents = useRecent((s) => s.files);
   const removeRecent = useRecent((s) => s.remove);
   const clearRecents = useRecent((s) => s.clear);
@@ -71,9 +69,7 @@ export function EmptyState() {
   const handleOpenFolder = async () => {
     try {
       const picked = await openFolderDialog();
-      if (!picked) return;
-      const { firstDoc } = await useWorkspace.getState().openFolder(picked);
-      if (firstDoc) await openPaths(firstDoc);
+      if (picked) await openFolderAsWorkspace(picked);
     } catch {
       /* 用户取消或浏览器环境 */
     }

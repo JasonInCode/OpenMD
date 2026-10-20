@@ -1,0 +1,9 @@
+[package]
+name = "openmd-shell-verb"
+version = "1.0.4"
+description = "OpenMD 的 Windows 资源管理器集成:Markdown 文件关联与文件夹右键菜单"
+edition = "2021"
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.52"
+windows-sys = { version = "0.59", features = ["Win32_UI_Shell"] }

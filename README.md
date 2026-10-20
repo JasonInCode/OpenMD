@@ -41,8 +41,9 @@
 -   **多标签页**：鼠标中键关闭标签，与浏览器操作习惯一致；标签可拖出成独立窗口、拖回合并，窗口内也可拖拽排序
 -   **最近打开**：首页最近文档列表，支持单条删除与一键清空
 -   **文件关联**：双击 `.md` / `.markdown` / `.mdown` / `.mkd` 直接打开（单实例转发）
+-   **文件夹右键菜单**：资源管理器里选中文件夹右键即可「Open with OpenMD」，直接打开为工作区
 -   **自动更新**：从 GitCode Release 检查新版本，应用内下载并重启安装
--   **自定义安装器**：独立安装/卸载向导，安装时可选关联 .md 文件，卸载时自动清理
+-   **自定义安装器**：独立安装/卸载向导，安装时可选关联 .md 文件与添加文件夹右键菜单，卸载时自动清理
 
 ## 界面预览
 
@@ -148,7 +149,7 @@ cd ..
 # 2. 打包 payload 并构建安装器
 cd installer
 npm install --legacy-peer-deps
-.\pack-payload.ps1      # 将 openmd.exe + md-file.ico + uninstOpenMD.exe 打进 payload.zip
+.\pack-payload.ps1      # 将 openmd.exe + md-file.ico + icon.ico + uninstOpenMD.exe 打进 payload.zip
 .\build-installer.ps1   # 产出 OpenMD_{version}_Windows_x86_64.exe
 ```
 
@@ -171,6 +172,8 @@ pnpm msix:install        # 本地侧载测试
 ```
 ├── src/            # 前端源码（React）
 ├── src-tauri/      # 主应用 Rust 后端
+├── crates/         # 多工程共用的 Rust 库
+│   └── openmd-shell-verb/  # Windows 资源管理器集成（文件关联 + 文件夹右键菜单），主程序/安装器/卸载器共用
 ├── installer/      # 安装向导（独立 Tauri 工程）
 │   ├── pack-payload.ps1
 │   └── build-installer.ps1
