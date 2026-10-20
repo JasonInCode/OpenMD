@@ -1,15 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Alert, Box, Button, Flex, SegmentGroup } from "@chakra-ui/react";
+import { Alert, Box, Flex } from "@chakra-ui/react";
 import {
-  Code2,
   ClipboardPaste,
   Copy,
-  Eye,
   ExternalLink,
   Image as ImageIcon,
   ImagePlus,
   Link2,
-  Play,
   Redo2,
   Replace,
   Scissors,
@@ -46,12 +43,10 @@ import {
   resolveWikiTarget,
 } from "../tauri/api";
 import { useTabs, type Tab } from "../stores/tabs";
-import { useSettings, type ViewMode } from "../stores/settings";
+import { useSettings } from "../stores/settings";
 import { useWorkspace } from "../stores/workspace";
-import { withViewTransition } from "../utils/viewTransition";
 import { ContextMenu, type MenuEntry } from "./ContextMenu";
 import { EmptyState } from "./EmptyState";
-import { PresentationMode } from "./PresentationMode";
 import { FloatingScrollbar } from "./FloatingScrollbar";
 
 const MD_EXTENSIONS = /\.(md|markdown|mdown|mkd)$/i;
@@ -259,7 +254,7 @@ function splitHighlightedLines(html: string): string[] {
 
 export function MarkdownView({ tab }: { tab: Tab }) {
   const { t } = useTranslation();
-  const { fontSize, contentPadding, viewMode, setViewMode, editMode } = useSettings();
+  const { fontSize, contentPadding, viewMode, editMode } = useSettings();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme !== "light";
   const { setEntries, setActive } = useToc();
@@ -267,7 +262,6 @@ export function MarkdownView({ tab }: { tab: Tab }) {
   const updateDraft = useTabs((s) => s.updateDraft);
 
   const editing = editMode && tab.path !== null;
-  const [presenting, setPresenting] = useState(false);
 
   const baseDir = tab.path ? dirnameOf(tab.path) : undefined;
   // 预览的渲染源。编辑期间预览打字只更新 store 里的 draft,不跟进
@@ -298,18 +292,18 @@ export function MarkdownView({ tab }: { tab: Tab }) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅在边界时刻同步
   }, [tab.content, tab.id, viewMode, editMode]);
-  const { html, assetPaths, frontmatter, isMarp } = useMemo(() => {
+  const { html, assetPaths, frontmatter } = useMemo(() => {
     if (tab.error) {
-      return { html: "", assetPaths: [] as string[], frontmatter: null, isMarp: false };
+      return { html: "", assetPaths: [] as string[], frontmatter: null };
     }
     if (!tab.path) {
-      return { html: "", assetPaths: [] as string[], frontmatter: null, isMarp: false };
+      return { html: "", assetPaths: [] as string[], frontmatter: null };
     }
     try {
       return renderFull(previewSource, baseDir);
     } catch (e) {
       console.error("render failed:", e);
-      return { html: "", assetPaths: [] as string[], frontmatter: null, isMarp: false };
+      return { html: "", assetPaths: [] as string[], frontmatter: null };
     }
   }, [previewSource, tab.error, tab.path, baseDir]);
 
@@ -1230,63 +1224,7 @@ export function MarkdownView({ tab }: { tab: Tab }) {
 
   return (
     <Box flex={1} position="relative" display="flex" flexDirection="column" minW={0} minH={0}>
-      {/* 「预览/代码」悬浮在内容区右上角,不单独占一行(编辑/保存已移入顶栏)。 */}
-      <Box
-        position="absolute"
-        top="8px"
-        right="16px"
-        zIndex={40}
-        borderRadius="8px"
-        borderWidth="1px"
-        borderColor="border.subtle"
-        bg="bg.panel"
-        boxShadow="sm"
-        backdropFilter="blur(8px)"
-        display="flex"
-        alignItems="center"
-        p="2px"
-      >
-        <SegmentGroup.Root
-          size="xs"
-          value={viewMode}
-          onValueChange={(e) => {
-            const next = e.value as ViewMode;
-            withViewTransition(() => setViewMode(next));
-          }}
-          aria-label={t("viewer.toolbar.switchView")}
-        >
-          <SegmentGroup.Indicator />
-          <SegmentGroup.Item value="preview">
-            <SegmentGroup.ItemHiddenInput />
-            <SegmentGroup.ItemText display="inline-flex" alignItems="center" gap={1.5}>
-              <Eye size={13} />
-              {t("viewer.toolbar.preview")}
-            </SegmentGroup.ItemText>
-          </SegmentGroup.Item>
-          <SegmentGroup.Item value="code">
-            <SegmentGroup.ItemHiddenInput />
-            <SegmentGroup.ItemText display="inline-flex" alignItems="center" gap={1.5}>
-              <Code2 size={13} />
-              {t("viewer.toolbar.code")}
-            </SegmentGroup.ItemText>
-          </SegmentGroup.Item>
-        </SegmentGroup.Root>
-        {isMarp && viewMode === "preview" && (
-          <Button
-            aria-label={t("viewer.toolbar.present")}
-            title={t("viewer.toolbar.present")}
-            size="xs"
-            variant="ghost"
-            gap={1}
-            px={2}
-            ms={1}
-            onClick={() => setPresenting(true)}
-          >
-            <Play size={13} />
-            {t("viewer.toolbar.present")}
-          </Button>
-        )}
-      </Box>
+      {/* 预览/代码/演示入口已迁到 StatusBar 右侧(footer)。 */}
       <Box flex={1} position="relative" display="flex" minW={0} minH={0}>
         <Box
           ref={scrollRef}
@@ -1355,13 +1293,6 @@ export function MarkdownView({ tab }: { tab: Tab }) {
         </Box>
         <FloatingScrollbar targetRef={scrollRef} />
       </Box>
-      {presenting && tab.path && (
-        <PresentationMode
-          content={previewSource}
-          path={tab.path}
-          onExit={() => setPresenting(false)}
-        />
-      )}
       {/* 图片拖拽手柄:视口定位在图片右下角,拖动实时调宽。 */}
       {resizeHandle && editing && viewMode === "preview" && (
         <Box

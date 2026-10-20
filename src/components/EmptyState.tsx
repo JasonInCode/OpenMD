@@ -1,10 +1,11 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { Box, Button, Flex, HStack, IconButton, Text, VStack } from "@chakra-ui/react";
 import { FileText, FolderOpen, FolderTree, Settings, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
 import { useRecent, type RecentFile } from "../stores/recent";
 import { useSettings } from "../stores/settings";
+import { useUI } from "../stores/ui";
 import { openFolderDialog, openFileDialog } from "../tauri/api";
 import { openFolderAsWorkspace } from "../lib/openFolderAsWorkspace";
 import { openStandaloneFiles } from "../lib/openStandaloneFiles";
@@ -33,7 +34,8 @@ export function EmptyState() {
   const removeRecent = useRecent((s) => s.remove);
   const clearRecents = useRecent((s) => s.clear);
   const recentListRef = useRef<HTMLDivElement>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsOpen = useUI((s) => s.settingsOpen);
+  const setSettingsOpen = useUI((s) => s.setSettingsOpen);
   // 设了自定义背景图时首页让出底色,别把底层模糊图盖住。
   const backgroundImage = useSettings((s) => s.backgroundImage);
   // next-themes 首帧 resolvedTheme 为 undefined,默认按暗色处理。

@@ -15,6 +15,8 @@ import { TabGhost } from "./components/TabGhost";
 import { AppBackground } from "./components/AppBackground";
 import { CloseDialog } from "./components/CloseDialog";
 import { UnsavedDialog } from "./components/UnsavedDialog";
+import { SettingsModal } from "./components/SettingsModal";
+import { useUI } from "./stores/ui";
 import { useTabs } from "./stores/tabs";
 import { useSettings } from "./stores/settings";
 import { useWorkspace } from "./stores/workspace";
@@ -71,6 +73,8 @@ export default function App() {
   const activeId = useTabs((s) => s.activeId);
   const refreshPath = useTabs((s) => s.refreshPath);
   const { tocOpen, backgroundImage, editMode } = useSettings();
+  const settingsOpen = useUI((s) => s.settingsOpen);
+  const setSettingsOpen = useUI((s) => s.setSettingsOpen);
   const [openError, setOpenError] = useState<string | null>(null);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   // 顶部提示条(编辑模式切换等):3 秒自动消失。
@@ -432,6 +436,7 @@ export default function App() {
       )}
       <CloseDialog open={closeDialogOpen} onClose={() => setCloseDialogOpen(false)} />
       <UnsavedDialog />
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </Flex>
   );
 }

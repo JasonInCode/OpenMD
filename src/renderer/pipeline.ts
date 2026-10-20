@@ -45,6 +45,23 @@ export function isMarpDoc(frontmatter: Record<string, unknown> | null): boolean 
   return value === true || value === "true";
 }
 
+/**
+ * 轻量检测一份 markdown 是否为 marp 文档:只看顶部 frontmatter 块并解析 `marp` 字段,
+ * 不跑完整的 markdown-it pipeline(renderFull 会调一次,这里不要重复)。
+ * 错落的 frontmatter / 解析失败都当作不是 marp;只是 UI 按钮的显示决策,容错优先。
+ */
+export function isMarpFromSource(markdown: string): boolean {
+  const m = stripBom(markdown).match(FRONTMATTER_RE);
+  if (!m) return false;
+  try {
+    const data = parseFrontmatter(m[1]);
+    if (Object.keys(data).length === 0) return false;
+    return isMarpDoc(data);
+  } catch {
+    return false;
+  }
+}
+
 /** Matches a leading `---\n…\n---\n` frontmatter block. */
 const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/;
 
