@@ -8,9 +8,6 @@ editors:
   not_executable: "不是可執行檔: %{exe}"
   file_not_found: "檔案不存在: %{path}"
   launch_failed: "無法啟動 %{exe}: %{error}"
-  launch_failed_no_reason: "無法啟動 %{exe}"
-  not_macos_app: "不是 macOS 應用程式(.app): %{exe}"
-  unsupported_platform: 此平台不支援「以其他程式開啟」
   fallback_name: 程式
 
 file_assoc:
@@ -18,7 +15,6 @@ file_assoc:
   exe_path_unavailable: "無法取得程式路徑: %{error}"
   registry_write_failed: "寫入登錄檔失敗: %{error}"
   registry_delete_failed: "刪除登錄檔機碼失敗: %{error}"
-  windows_only: 僅支援 Windows
 
 qq_group:
   fallback_group_name: ①群
@@ -59,4 +55,3 @@ updater:
   cancelled: 下載已取消
   incomplete: "下載不完整:預期 %{expected},實際 %{actual}"
   launch_failed: "無法啟動安裝程式 (錯誤碼: %{code})"
-  windows_only: 僅支援 Windows

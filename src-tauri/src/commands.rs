@@ -79,28 +79,19 @@ pub fn write_markdown_file(path: String, content: String) -> Result<(), String> 
 /// HOMEDRIVE/HOMEPATH fallback for older/roaming setups) is what Windows
 /// actually provides.
 pub fn home_dir() -> Option<std::path::PathBuf> {
-    #[cfg(windows)]
-    {
-        if let Some(profile) = std::env::var_os("USERPROFILE").filter(|s| !s.is_empty()) {
-            return Some(std::path::PathBuf::from(profile));
-        }
-        match (
-            std::env::var_os("HOMEDRIVE").filter(|s| !s.is_empty()),
-            std::env::var_os("HOMEPATH").filter(|s| !s.is_empty()),
-        ) {
-            (Some(drive), Some(rest)) => {
-                let mut joined = std::ffi::OsString::from(drive);
-                joined.push(&rest);
-                Some(std::path::PathBuf::from(joined))
-            }
-            _ => None,
-        }
+    if let Some(profile) = std::env::var_os("USERPROFILE").filter(|s| !s.is_empty()) {
+        return Some(std::path::PathBuf::from(profile));
     }
-    #[cfg(not(windows))]
-    {
-        std::env::var_os("HOME")
-            .filter(|s| !s.is_empty())
-            .map(std::path::PathBuf::from)
+    match (
+        std::env::var_os("HOMEDRIVE").filter(|s| !s.is_empty()),
+        std::env::var_os("HOMEPATH").filter(|s| !s.is_empty()),
+    ) {
+        (Some(drive), Some(rest)) => {
+            let mut joined = std::ffi::OsString::from(drive);
+            joined.push(&rest);
+            Some(std::path::PathBuf::from(joined))
+        }
+        _ => None,
     }
 }
 
@@ -108,16 +99,13 @@ pub fn home_dir() -> Option<std::path::PathBuf> {
 ///
 /// The prefix is valid but leaks into anything that displays the path, and it
 /// breaks naive string handling on the frontend. `\\?\UNC\server\share` folds
-/// back to `\\server\share`. No-op on other platforms.
+/// back to `\\server\share`.
 fn strip_verbatim_prefix(path: String) -> String {
-    #[cfg(windows)]
-    {
-        if let Some(rest) = path.strip_prefix(r"\\?\UNC\") {
-            return format!(r"\\{}", rest);
-        }
-        if let Some(rest) = path.strip_prefix(r"\\?\") {
-            return rest.to_string();
-        }
+    if let Some(rest) = path.strip_prefix(r"\\?\UNC\") {
+        return format!(r"\\{}", rest);
+    }
+    if let Some(rest) = path.strip_prefix(r"\\?\") {
+        return rest.to_string();
     }
     path
 }
@@ -903,7 +891,7 @@ mod write_tests {
     }
 }
 
-#[cfg(all(test, windows))]
+#[cfg(test)]
 mod tests {
     use super::strip_verbatim_prefix;
 

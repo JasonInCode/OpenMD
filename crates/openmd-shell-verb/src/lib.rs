@@ -20,8 +20,6 @@ pub const FOLDER_VERB_LABEL: &str = "Open with OpenMD";
 /// 而不用在一个扁平的错误串里区分阶段。
 #[derive(Debug)]
 pub enum ShellVerbError {
-    /// 当前平台不提供资源管理器集成
-    Unsupported,
     /// 打开或创建注册表键失败
     Key(&'static str, std::io::Error),
     /// 写入注册表值失败
@@ -33,7 +31,6 @@ pub enum ShellVerbError {
 impl std::fmt::Display for ShellVerbError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Unsupported => f.write_str("Windows only"),
             Self::Key(action, e) | Self::Write(action, e) | Self::Delete(action, e) => {
                 write!(f, "{action}: {e}")
             }
@@ -59,44 +56,12 @@ pub fn verb_icon_line(icon: &Path) -> String {
     format!("\"{}\"", icon.display())
 }
 
-#[cfg(windows)]
 mod imp;
 
-#[cfg(windows)]
 pub use imp::{
     folder_verb_is_registered, md_is_associated, register_folder_verb, register_md,
     unregister_folder_verb, unregister_md,
 };
-
-#[cfg(not(windows))]
-pub fn md_is_associated() -> bool {
-    false
-}
-
-#[cfg(not(windows))]
-pub fn register_md(_exe: &Path, _icon: &Path) -> Result<(), ShellVerbError> {
-    Err(ShellVerbError::Unsupported)
-}
-
-#[cfg(not(windows))]
-pub fn unregister_md() -> Result<(), ShellVerbError> {
-    Err(ShellVerbError::Unsupported)
-}
-
-#[cfg(not(windows))]
-pub fn folder_verb_is_registered(_exe: &Path) -> bool {
-    false
-}
-
-#[cfg(not(windows))]
-pub fn register_folder_verb(_exe: &Path, _icon: &Path) -> Result<(), ShellVerbError> {
-    Err(ShellVerbError::Unsupported)
-}
-
-#[cfg(not(windows))]
-pub fn unregister_folder_verb() -> Result<(), ShellVerbError> {
-    Err(ShellVerbError::Unsupported)
-}
 
 #[cfg(test)]
 mod tests {
@@ -137,6 +102,5 @@ mod tests {
             ShellVerbError::Key("create folder verb", io).to_string(),
             "create folder verb: boom"
         );
-        assert_eq!(ShellVerbError::Unsupported.to_string(), "Windows only");
     }
 }

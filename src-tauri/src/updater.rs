@@ -116,7 +116,6 @@ fn wait_until_file_ready(file_path: &str) {
 }
 
 /// 以 SW_SHOWNORMAL 启动安装向导(ShellExecuteW,无终端窗口)
-#[cfg(target_os = "windows")]
 fn launch_installer(file_path: &str) -> Result<(), String> {
     use windows_sys::Win32::UI::Shell::ShellExecuteW;
     use windows_sys::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
@@ -139,11 +138,6 @@ fn launch_installer(file_path: &str) -> Result<(), String> {
         return Err(t!("updater.launch_failed", code = hinst as isize).into_owned());
     }
     Ok(())
-}
-
-#[cfg(not(target_os = "windows"))]
-fn launch_installer(_file_path: &str) -> Result<(), String> {
-    Err(t!("updater.windows_only").into_owned())
 }
 
 /// 启动安装向导并退出应用

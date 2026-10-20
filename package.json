@@ -6,13 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "build:store": "tsc && vite build --mode store",
     "test": "vitest run",
     "preview": "vite preview",
-    "tauri": "tauri",
-    "tauri:build:store": "tauri build --config src-tauri/tauri.store.conf.json",
-    "msix": "powershell -NoProfile -ExecutionPolicy Bypass -File msix/build-msix.ps1",
-    "msix:install": "powershell -NoProfile -ExecutionPolicy Bypass -File msix/install-msix.ps1"
+    "tauri": "tauri"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.28.0",

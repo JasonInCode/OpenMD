@@ -2878,6 +2878,7 @@ dependencies = [
  "image",
  "notify",
  "notify-debouncer-mini",
+ "openmd-shell-verb",
  "reqwest 0.12.28",
  "rust-i18n",
  "serde",
@@ -2889,6 +2890,14 @@ dependencies = [
  "tauri-plugin-opener",
  "tauri-plugin-single-instance",
  "tauri-plugin-window-state",
+ "windows-sys 0.59.0",
+ "winreg 0.52.0",
+]
+
+[[package]]
+name = "openmd-shell-verb"
+version = "1.0.4"
+dependencies = [
  "windows-sys 0.59.0",
  "winreg 0.52.0",
 ]

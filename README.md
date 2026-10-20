@@ -94,6 +94,8 @@ pnpm tauri dev
 
 ## 构建
 
+仅支持 Windows。
+
 ### 主程序
 
 ```bash
@@ -101,71 +103,30 @@ pnpm tauri build
 # 产物：src-tauri/target/release/openmd.exe
 ```
 
-### Linux
-
-主程序基于 Tauri，本体跨平台。Linux 上通过系统的 WebKitGTK 渲染，需先安装 WebKitGTK 开发库（Debian/Ubuntu/Mint）：
-
-```bash
-sudo apt install libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
-pnpm install
-pnpm tauri build
-# 产物：
-#   src-tauri/target/release/openmd                    可执行文件
-#   src-tauri/target/release/bundle/deb/*.deb          Debian/Ubuntu/Mint 安装包
-#   src-tauri/target/release/bundle/rpm/*.rpm          Fedora/openSUSE/RHEL 安装包
-#   src-tauri/target/release/bundle/appimage/*.AppImage 免安装单文件（chmod +x 后直接运行）
-```
-
-Fedora/Arch 等其他发行版请参考 Tauri 官方文档安装对应的 `webkit2gtk-4.1` 开发包。
-
-安装包的运行依赖在 `src-tauri/tauri.conf.json` 中声明；用户安装时由发行版的包管理器解析，不能用开发机上的 `-dev` 包代替验证。当前 64 位构建声明 glibc 2.39 为最低运行要求；支持更旧系统需要在更旧的兼容环境重新构建并调整依赖。
-
-### macOS
-
-主程序基于 Tauri，本体跨平台，Mac 上可直接构建原生 `.app`：
-
-```bash
-# 前置：xcode-select --install；Rust（rustup）；Node ≥20 + pnpm
-source "$HOME/.cargo/env"
-pnpm install
-pnpm tauri build
-# 产物：src-tauri/target/release/bundle/macos/OpenMD.app
-```
-
-详见 [docs/BUILD-macOS.md](docs/BUILD-macOS.md)（含依赖、安装、DMG 打包与
-macOS 适配改动说明）。
-
 ### 安装包（安装器 + 卸载器，Windows）
 
-发布走自定义安装向导，需依次构建三个工程：
+发布走自定义安装向导。两个脚本都基于自身位置推导仓库路径，仓库放在任何目录下
+都能直接运行，无需修改脚本。
+
+需依次构建三个工程：
 
 ```powershell
-# 1. 构建卸载器
+# 1. 构建主程序
+pnpm install
+pnpm tauri build        # 产出 src-tauri/target/release/openmd.exe
+
+# 2. 构建卸载器
 cd uninstaller
 npm install --legacy-peer-deps
 npm run tauri:build
 cd ..
 
-# 2. 打包 payload 并构建安装器
+# 3. 打包 payload 并构建安装器
 cd installer
 npm install --legacy-peer-deps
 .\pack-payload.ps1      # 将 openmd.exe + md-file.ico + icon.ico + uninstOpenMD.exe 打进 payload.zip
 .\build-installer.ps1   # 产出 OpenMD_{version}_Windows_x86_64.exe
 ```
-
-### 微软商店（MSIX，Windows）
-
-上架微软商店走 MSIX 打包，商店版会按微软政策隐藏商店外入口（平台标签、QQ 群、
-赞助、应用内更新等）：
-
-```powershell
-pnpm tauri:build:store   # 商店版构建
-pnpm msix                # 打出 msix/out/OpenMD_{version}_x64.msix
-pnpm msix:install        # 本地侧载测试
-```
-
-详见 [docs/BUILD-MSIX.md](docs/BUILD-MSIX.md)（含 Partner Center 包身份配置、
-提交流程与常见问题）。
 
 ## 项目结构
 

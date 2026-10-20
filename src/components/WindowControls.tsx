@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { HStack, IconButton } from "@chakra-ui/react";
 import { Copy, Minus, Square, X } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { IN_TAURI, IS_MACOS } from "../utils/platform";
+import { IN_TAURI } from "../utils/platform";
 
 /** 窗口按钮边长:与顶栏等高(46px),三连排才能正好填满右上角。 */
 const BTN_SIZE = "46px";
@@ -44,8 +44,6 @@ export function WindowControls() {
   }, []);
 
   if (!IN_TAURI) return null;
-  // macOS 走 titleBarStyle:"Overlay",由系统绘制红绿灯按钮,不再自绘一套。
-  if (IS_MACOS) return null;
 
   // 中性灰按钮:图标用弱化前景色,悬停/按下只铺一层浅灰底,不再黑白反色。
   const mono = {

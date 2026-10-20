@@ -4,7 +4,6 @@ mod commands;
 mod editors;
 mod file_assoc;
 mod i18n;
-mod pkg;
 mod qq_group;
 mod stats;
 mod tab_drag;
@@ -152,17 +151,6 @@ fn collect_open_args<I: Iterator<Item = String>>(args: I) -> (Vec<String>, Vec<S
     (files, folders)
 }
 
-/// macOS:把 Launch Services 传来的 `file://` URL 转成本地路径,只保留
-/// [`is_markdown_file`] 认可的文件。
-#[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
-fn collect_md_urls(urls: Vec<tauri::Url>) -> Vec<String> {
-    urls.into_iter()
-        .filter_map(|u| u.to_file_path().ok())
-        .filter(|p| is_markdown_file(p))
-        .map(|p| p.to_string_lossy().into_owned())
-        .collect()
-}
-
 /// 隐藏窗口到系统托盘(前端关闭询问对话框选择"隐藏到托盘"时调用)。
 #[tauri::command]
 fn hide_to_tray(window: WebviewWindow) {
@@ -175,7 +163,6 @@ fn quit_app(app: AppHandle) {
     app.exit(0);
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // 前端 LanguageSync 启动后会同步语言;默认中文,保证托盘菜单等原生 UI 首帧即为中文。
     rust_i18n::set_locale("zh");
@@ -269,17 +256,9 @@ pub fn run() {
                     // 用 destroy() 真关 —— 再调 close() 会回到这里,自激。
                     let _ = window.emit("close-requested", ());
                 } else {
-                    // macOS 惯例:点红灯只是关掉窗口,应用继续驻留,由 Dock/托盘唤回。
-                    #[cfg(target_os = "macos")]
-                    {
-                        let _ = window.hide();
-                    }
-                    // Windows/Linux 保持原行为:交给前端弹出询问对话框
+                    // 拦截所有关闭请求(点 X / Alt+F4):交给前端弹出询问对话框
                     // (隐藏到托盘 还是 退出)。
-                    #[cfg(not(target_os = "macos"))]
-                    {
-                        let _ = window.emit("close-requested", ());
-                    }
+                    let _ = window.emit("close-requested", ());
                 }
             }
             _ => {}
@@ -304,22 +283,8 @@ pub fn run() {
             }
             Ok(())
         })
-        .build(tauri::generate_context!())
-        .expect("error while building tauri application")
-        .run(|app, event| {
-            // macOS 的"用 OpenMD 打开"不是命令行参数,而是 Launch Services
-            // 投递的 `RunEvent::Opened`。双击 .md / 拖到 Dock 图标都走这里,
-            // 并且可能在 webview 就绪之前到达,所以同样走缓冲 + 事件通知。
-            #[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
-            if let tauri::RunEvent::Opened { urls } = event {
-                let files = collect_md_urls(urls);
-                debug_log(app, &format!("RunEvent::Opened files: {files:?}"));
-                push_opened_paths(app, files, Vec::new());
-                tray::show_main_window(app);
-            }
-            #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "android")))]
-            let _ = (app, event);
-        });
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
 }
 
 #[cfg(test)]
@@ -359,7 +324,7 @@ mod tests {
         let doc_arg = doc.to_string_lossy().into_owned();
         let folder_arg = folder.to_string_lossy().into_owned();
 
-        let (files, folders) = collect_open_args(argv(&[&doc_arg, &folder_arg]));
+        let (files, folders) = collect_open_args(argv(&[&doc_arg, &folder_arg]).into_iter());
 
         assert_eq!(files, vec![doc_arg]);
         assert_eq!(folders, vec![folder_arg]);
@@ -375,7 +340,7 @@ mod tests {
         let png_arg = png.to_string_lossy().into_owned();
         let missing_arg = missing.to_string_lossy().into_owned();
 
-        let (files, folders) = collect_open_args(argv(&["--flag", &png_arg, &missing_arg]));
+        let (files, folders) = collect_open_args(argv(&["--flag", &png_arg, &missing_arg]).into_iter());
 
         assert!(files.is_empty(), "未知扩展名与不存在的路径都不该被打开");
         assert!(folders.is_empty());

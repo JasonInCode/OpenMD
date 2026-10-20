@@ -18,15 +18,10 @@ pub fn show_main_window(app: &AppHandle) {
 }
 
 /// 按当前语言构建托盘右键菜单。
-/// 商店版(MSIX 包身份运行)更新由商店接管,不提供「检查更新」,
-/// 避免出现商店外更新入口。
 pub fn build_tray_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     let show = MenuItem::with_id(app, "show", t!("tray.show"), true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", t!("tray.quit"), true, None::<&str>)?;
-    if crate::pkg::is_msix() {
-        return Menu::with_items(app, &[&show, &quit]);
-    }
     let check_update = MenuItem::with_id(app, "check-update", t!("tray.check_update"), true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", t!("tray.quit"), true, None::<&str>)?;
     Menu::with_items(app, &[&show, &check_update, &quit])
 }
 
@@ -68,21 +63,6 @@ pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
         });
     if let Some(icon) = app.default_window_icon() {
         builder = builder.icon(icon.clone());
-    }
-    #[cfg(target_os = "macos")]
-    {
-        // macOS 菜单栏要的是单色 template 图标:系统按 template 语义自动适配
-        // 深浅色,彩色应用图标在菜单栏里会显得脏。Windows/Linux 仍用应用图标。
-        // 资源是预先离线生成的 36×36 原始 RGBA(18pt @2x),这样不必为 tauri
-        // 打开 image-png feature,也不必在启动时做 PNG 解码。
-        const TRAY_ICON_RGBA: &[u8] = include_bytes!("../icons/tray-template.rgba");
-        const TRAY_ICON_SIZE: u32 = 36;
-        let icon = tauri::image::Image::new_owned(
-            TRAY_ICON_RGBA.to_vec(),
-            TRAY_ICON_SIZE,
-            TRAY_ICON_SIZE,
-        );
-        builder = builder.icon(icon).icon_as_template(true);
     }
     builder.build(app)?;
     Ok(())

@@ -1,10 +1,11 @@
 param()
 
 $ErrorActionPreference = "Stop"
-$InstallerProject = "D:\OpenMD\installer"
+$InstallerProject = $PSScriptRoot
+$MainProject = Split-Path $InstallerProject -Parent
 
 # Read version from main project's Cargo.toml
-$mainCargo = "D:\OpenMD\src-tauri\Cargo.toml"
+$mainCargo = Join-Path $MainProject "src-tauri\Cargo.toml"
 $version = (Select-String -Path $mainCargo -Pattern '^version\s*=\s*"(.+)"').Matches[0].Groups[1].Value
 Write-Host "Main app version: $version" -ForegroundColor Cyan
 
@@ -14,9 +15,9 @@ npm run tauri:build
 if ($LASTEXITCODE -ne 0) { throw "Installer build failed" }
 
 # Rename output (cargo package name: OpenMD-installer; bundle.active=false so no rename by tauri)
-$builtExe = "$InstallerProject\src-tauri\target\release\OpenMD-installer.exe"
+$builtExe = Join-Path $InstallerProject "src-tauri\target\release\OpenMD-installer.exe"
 $outputName = "OpenMD_${version}_Windows_x86_64.exe"
-$outputPath = "$InstallerProject\$outputName"
+$outputPath = Join-Path $InstallerProject $outputName
 
 if (Test-Path $builtExe) {
     Copy-Item $builtExe $outputPath -Force

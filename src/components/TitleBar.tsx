@@ -34,7 +34,6 @@ import { openFolderAsWorkspace } from "../lib/openFolderAsWorkspace";
 import { openStandaloneFiles } from "../lib/openStandaloneFiles";
 import { isDirty, useTabs } from "../stores/tabs";
 import { withViewTransition } from "../utils/viewTransition";
-import { IS_MACOS } from "../utils/platform";
 import { SettingsModal } from "./SettingsModal";
 import { WindowControls } from "./WindowControls";
 
@@ -216,9 +215,7 @@ export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void 
       as="header"
       h="46px"
       // 右侧不留内边距:窗口按钮要贴到右上角,留白会让角落点不到关闭。
-      // macOS 的 titleBarStyle:"Overlay" 会把红绿灯按钮叠在内容左上角,
-      // 这里留出空档避免压住 Logo;其他平台保持原来的 3px。
-      paddingLeft={IS_MACOS ? "78px" : "3px"}
+      paddingLeft="3px"
       flexShrink={0}
       userSelect="none"
       display="flex"

@@ -2,7 +2,7 @@ mod installer;
 
 use installer::*;
 
-/// 检测静默安装参数并执行无界面安装（供 Microsoft Store 等无人值守场景使用）。
+/// 检测静默安装参数并执行无界面安装（供无人值守部署使用）。
 /// 支持 /S、/SILENT、/VERYSILENT、/QUIET（不区分大小写），
 /// 可选 /D=<路径> 指定安装目录（含空格路径需整体加引号传递）。
 /// 命中静默参数时返回 Some(退出码)：成功 0，失败 1；未命中返回 None（正常进入 GUI）。
@@ -45,7 +45,6 @@ pub fn detect_silent_install() -> Option<i32> {
     }
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())

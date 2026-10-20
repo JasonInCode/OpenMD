@@ -69,8 +69,6 @@ struct DragSession {
     source_label: String,
     /// 光标相对芯片窗口左上角的偏移(物理像素),跟手时保持不变。
     grab: PhysicalPosition<f64>,
-    /// 芯片窗口尺寸(物理像素)。
-    chip_size: PhysicalSize<u32>,
     /// 落成独立窗口后的尺寸与最小尺寸(物理像素)。
     settle_size: PhysicalSize<u32>,
     settle_min: PhysicalSize<u32>,
@@ -157,7 +155,6 @@ pub fn begin_tab_drag(
     let position = clamp_to_work_area(
         &window,
         PhysicalPosition::new(cursor.x - grab.x, cursor.y - grab.y),
-        chip_size,
         EDGE_KEEP_CHIP,
     );
 
@@ -181,7 +178,6 @@ pub fn begin_tab_drag(
         window_label: label.clone(),
         source_label,
         grab,
-        chip_size,
         settle_size,
         settle_min: min,
         targets: collect_targets(&app, &state, &[&label, window.label()]),
@@ -309,7 +305,6 @@ fn spawn_poller(app: AppHandle, id: u64) {
                     .as_ref()
                     .expect("上一行刚确认过芯片窗口还在"),
                 PhysicalPosition::new(cursor.x - session.grab.x, cursor.y - session.grab.y),
-                session.chip_size,
                 EDGE_KEEP_CHIP,
             );
             if last_position != Some(position) {
@@ -404,7 +399,6 @@ fn window_under_point(
 fn clamp_to_work_area(
     reference: &WebviewWindow,
     position: PhysicalPosition<f64>,
-    size: PhysicalSize<u32>,
     keep: f64,
 ) -> PhysicalPosition<i32> {
     match reference.monitor_from_point(position.x, position.y) {
@@ -516,10 +510,10 @@ mod tests {
 
     #[test]
     fn edges_are_half_open_so_an_exact_right_or_bottom_edge_is_a_miss() {
-        // 右边界 900:属于窗口内;再往右一像素就不是了。
+        // 右边界 900 不算在 newer 里(newer 的 x 区间是 [500,900));再往右同理。
         assert_eq!(
             window_under_point(&targets(), PhysicalPosition::new(900.0, 200.0)),
-            Some("newer")
+            None
         );
         assert_eq!(
             window_under_point(&targets(), PhysicalPosition::new(900.5, 200.0)),
@@ -540,8 +534,8 @@ mod tests {
     #[test]
     fn overlapping_windows_pick_the_one_created_later() {
         let list = vec![
-            ("older".to_string(), rect(0, 0, 800, 600)),
             ("newer".to_string(), rect(100, 100, 800, 600)),
+            ("older".to_string(), rect(0, 0, 800, 600)),
         ];
         assert_eq!(
             window_under_point(&list, PhysicalPosition::new(200.0, 200.0)),
@@ -592,7 +586,6 @@ mod tests {
             window_label: "tab-win-1".into(),
             source_label: "main".into(),
             grab: PhysicalPosition::new(10.0, 12.0),
-            chip_size: PhysicalSize::new(200, 32),
             settle_size: PhysicalSize::new(720, 480),
             settle_min: PhysicalSize::new(640, 480),
             targets: targets(),

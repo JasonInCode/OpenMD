@@ -96,7 +96,7 @@ pub fn unregister_md() -> Result<(), ShellVerbError> {
 /// 菜单项是否指向**当前**这个 exe。比对 command 而不只是看键在不在:用户换了安装
 /// 目录之后,残留的注册项会指向一个不存在的程序,此时设置页必须显示未注册。
 pub fn folder_verb_is_registered(exe: &Path) -> bool {
-    let Some(classes) = RegKey::predef(HKEY_CURRENT_USER).open_subkey("Software\\Classes") else {
+    let Ok(classes) = RegKey::predef(HKEY_CURRENT_USER).open_subkey("Software\\Classes") else {
         return false;
     };
     let Ok(verb) = classes.open_subkey(&folder_verb_key()) else {

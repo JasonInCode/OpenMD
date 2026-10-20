@@ -1,10 +1,10 @@
 param()
 
 $ErrorActionPreference = "Stop"
-$MainProject = "D:\OpenMD"
-$InstallerProject = "D:\OpenMD\installer"
-$UninstallerProject = "D:\OpenMD\uninstaller"
-$PayloadZip = "$InstallerProject\src-tauri\payload.zip"
+$InstallerProject = $PSScriptRoot
+$MainProject = Split-Path $InstallerProject -Parent
+$UninstallerProject = Join-Path $MainProject "uninstaller"
+$PayloadZip = Join-Path $InstallerProject "src-tauri\payload.zip"
 $TempDir = "$env:TEMP\openmd-payload"
 
 Write-Host "=== Creating payload archive ===" -ForegroundColor Cyan
@@ -16,7 +16,7 @@ if (Test-Path $TempDir) {
 New-Item -ItemType Directory -Path $TempDir -Force | Out-Null
 
 # 1. Main exe (cargo package name: openmd; Test-Path is case-insensitive on Windows)
-$mainExe = "$MainProject\src-tauri\target\release\openmd.exe"
+$mainExe = Join-Path $MainProject "src-tauri\target\release\openmd.exe"
 if (Test-Path $mainExe) {
     Copy-Item $mainExe $TempDir\
     Write-Host "  [OK] openmd.exe"
@@ -25,7 +25,7 @@ if (Test-Path $mainExe) {
 }
 
 # 2. Markdown file association icon (expected in install dir by associate_md_files)
-$mdIcon = "$MainProject\src-tauri\icons\md-file.ico"
+$mdIcon = Join-Path $MainProject "src-tauri\icons\md-file.ico"
 if (Test-Path $mdIcon) {
     Copy-Item $mdIcon $TempDir\
     Write-Host "  [OK] md-file.ico"
@@ -34,7 +34,7 @@ if (Test-Path $mdIcon) {
 }
 
 # 3. Folder context menu icon (expected in install dir by register_folder_verb)
-$appIcon = "$MainProject\src-tauri\icons\icon.ico"
+$appIcon = Join-Path $MainProject "src-tauri\icons\icon.ico"
 if (Test-Path $appIcon) {
     Copy-Item $appIcon $TempDir\
     Write-Host "  [OK] icon.ico"
@@ -43,7 +43,7 @@ if (Test-Path $appIcon) {
 }
 
 # 4. Uninstaller (cargo package name: uninstOpenMD)
-$uninstExe = "$UninstallerProject\src-tauri\target\release\uninstOpenMD.exe"
+$uninstExe = Join-Path $UninstallerProject "src-tauri\target\release\uninstOpenMD.exe"
 if (Test-Path $uninstExe) {
     Copy-Item $uninstExe $TempDir\
     Write-Host "  [OK] uninstOpenMD.exe"

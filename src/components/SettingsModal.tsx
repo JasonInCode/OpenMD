@@ -36,7 +36,6 @@ import {
 } from "lucide-react";
 import { useSettings, MAX_BACKGROUND_BLUR, type Language } from "../stores/settings";
 import { useUpdate } from "../stores/update";
-import { IS_STORE_BUILD } from "../lib/build-flags";
 import { isFolderVerbRegistered, isMdAssociated, openImageDialog, registerFolderVerb, registerMdAssociation, unregisterFolderVerb, unregisterMdAssociation } from "../tauri/api";
 import { useBackgroundSrc } from "../lib/useBackgroundSrc";
 import { useOverlayBlur } from "../lib/overlayBlur";
@@ -53,11 +52,6 @@ const SECTIONS: { id: SectionId; labelKey: string; icon: ComponentType<{ size?: 
   { id: "qq", labelKey: "settings.section.qq", icon: FaQq },
   { id: "about", labelKey: "settings.section.about", icon: Info },
 ];
-
-// 商店版不展示赞助与 QQ 群入口(微软政策 10.1.5 / 10.2.3:不得引导用户离开商店)。
-const visibleSections = SECTIONS.filter(
-  (s) => !(IS_STORE_BUILD && (s.id === "sponsor" || s.id === "qq")),
-);
 
 /** 「名称 + 当前状态 + 操作按钮」一行。文件关联与右键菜单两个开关共用。 */
 function ToggleRow({
@@ -114,16 +108,13 @@ function GeneralSection() {
   // 文件关联状态:null = 未知/浏览器预览(不渲染该行)
   const [assoc, setAssoc] = useState<boolean | null>(null);
   const [assocBusy, setAssocBusy] = useState(false);
-  // 文件夹右键菜单:同样只存在于 Windows,商店版下注册表写入被虚拟化
+  // 文件夹右键菜单:注册表写入能力随 Windows 权限而定
   const [folderVerb, setFolderVerb] = useState<boolean | null>(null);
   const [folderVerbBusy, setFolderVerbBusy] = useState(false);
   // 关闭窗口行为(与关闭询问对话框的"不再提醒"共用一个设置)
   const { closeAction, setCloseAction } = useSettings();
 
   useEffect(() => {
-    // 商店版(MSIX)下注册表写入被虚拟化,开关无效:文件关联由
-    // AppxManifest 的 fileTypeAssociation 声明,这里不再查询/渲染这些行。
-    if (IS_STORE_BUILD) return;
     isMdAssociated()
       .then(setAssoc)
       .catch(() => setAssoc(null));
@@ -426,26 +417,24 @@ function AboutSection() {
     }
   };
 
-  /** 作者的平台链接(与 NexBox 相同)。商店版按微软政策不构建、不展示。 */
-  const authorLinks = IS_STORE_BUILD
-    ? []
-    : [
-        {
-          label: t("settings.about.xiaoheihe"),
-          url: "https://xiaoheihe.cn/app/user/profile/56380800",
-          icon: <img src="/icons/xiaoheihe.webp" alt={t("settings.about.xiaoheihe")} style={{ width: "20px", height: "20px", objectFit: "contain" }} />,
-        },
-        {
-          label: "Bilibili",
-          url: "https://space.bilibili.com/1614951812",
-          icon: <RiBilibiliFill size={19} color="#00A1D6" />,
-        },
-        {
-          label: t("settings.about.douyin"),
-          url: "https://www.douyin.com/user/MS4wLjABAAAAytD1zP6zVeXgPQuG-PWHq4AhsZz9zNXPcJap2JVaoG88Ani9tmBj0FtH7DLrQWsH",
-          icon: <RiTiktokFill size={18} color="currentColor" />,
-        },
-      ];
+  /** 作者的平台链接(与 NexBox 相同)。 */
+  const authorLinks = [
+    {
+      label: t("settings.about.xiaoheihe"),
+      url: "https://xiaoheihe.cn/app/user/profile/56380800",
+      icon: <img src="/icons/xiaoheihe.webp" alt={t("settings.about.xiaoheihe")} style={{ width: "20px", height: "20px", objectFit: "contain" }} />,
+    },
+    {
+      label: "Bilibili",
+      url: "https://space.bilibili.com/1614951812",
+      icon: <RiBilibiliFill size={19} color="#00A1D6" />,
+    },
+    {
+      label: t("settings.about.douyin"),
+      url: "https://www.douyin.com/user/MS4wLjABAAAAytD1zP6zVeXgPQuG-PWHq4AhsZz9zNXPcJap2JVaoG88Ani9tmBj0FtH7DLrQWsH",
+      icon: <RiTiktokFill size={18} color="currentColor" />,
+    },
+  ];
 
   const checking = lastCheck === "checking";
 
@@ -473,25 +462,22 @@ function AboutSection() {
         </Text>
         <HStack gap={3}>
           <Text fontSize="sm">{version}</Text>
-          {!IS_STORE_BUILD && (
-            <Button
-              size="xs"
-              variant="outline"
-              borderColor="border.subtle"
-              gap={1}
-              onClick={() => void check()}
-              disabled={checking}
-            >
-              <RefreshCw size={12} className={checking ? "animate-spin" : undefined} />
-              {checking ? t("settings.about.checking") : t("settings.about.checkUpdate")}
-            </Button>
-          )}
+          <Button
+            size="xs"
+            variant="outline"
+            borderColor="border.subtle"
+            gap={1}
+            onClick={() => void check()}
+            disabled={checking}
+          >
+            <RefreshCw size={12} className={checking ? "animate-spin" : undefined} />
+            {checking ? t("settings.about.checking") : t("settings.about.checkUpdate")}
+          </Button>
         </HStack>
       </Flex>
 
       {/* 更新行:与右下角弹窗共用状态,内嵌 下载→进度→重启安装 完整流程 */}
-      {/* 商店版更新由商店接管,不渲染应用内更新 UI */}
-      {!IS_STORE_BUILD && (lastCheck === "available" || phase === "downloading" || phase === "complete" || phase === "error") && (
+      {(lastCheck === "available" || phase === "downloading" || phase === "complete" || phase === "error") && (
         <Flex justify="space-between" align="center" gap={6} py={3} borderBottomWidth="1px" borderColor="border.subtle">
           <Text fontSize="sm" color="fg.muted" flexShrink={0}>
             {t("settings.about.update")}
@@ -547,7 +533,7 @@ function AboutSection() {
         </Flex>
       )}
 
-      {!IS_STORE_BUILD && lastCheck === "latest" && (
+      {lastCheck === "latest" && (
         <Flex justify="space-between" align="center" gap={6} py={3} borderBottomWidth="1px" borderColor="border.subtle">
           <Text fontSize="sm" color="fg.muted" flexShrink={0}>
             {t("settings.about.update")}
@@ -556,7 +542,7 @@ function AboutSection() {
         </Flex>
       )}
 
-      {!IS_STORE_BUILD && lastCheck === "error" && phase !== "error" && (
+      {lastCheck === "error" && phase !== "error" && (
         <Flex justify="space-between" align="center" gap={6} py={3} borderBottomWidth="1px" borderColor="border.subtle">
           <Text fontSize="sm" color="fg.muted" flexShrink={0}>
             {t("settings.about.update")}
@@ -594,8 +580,7 @@ function AboutSection() {
               {t("settings.about.authorName")}
             </Text>
           </HStack>
-          {!IS_STORE_BUILD && (
-            <Flex align="center" gap={2}>
+          <Flex align="center" gap={2}>
               {authorLinks.map((p) => (
                 <Box
                   key={p.label}
@@ -615,7 +600,6 @@ function AboutSection() {
                 </Box>
               ))}
             </Flex>
-          )}
         </HStack>
       </Flex>
     </VStack>
@@ -755,7 +739,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                 borderColor="border.subtle"
                 bg="bg.subtle"
               >
-                {visibleSections.map((s) => {
+                {SECTIONS.map((s) => {
                   const active = s.id === section;
                   return (
                     <Button

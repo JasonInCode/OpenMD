@@ -34,10 +34,6 @@ uninstaller/dist
 uninstaller/src-tauri/target
 uninstaller/*.exe
 
-# MSIX build artifacts
-msix/work
-msix/out
-
 # External reference projects
 mdhero-main
 

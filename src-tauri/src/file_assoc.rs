@@ -30,7 +30,6 @@ fn current_exe() -> Result<PathBuf, String> {
 /// 共享 crate 按失败阶段区分错误,这里挑对应的本地化提示。
 fn describe(e: ShellVerbError) -> String {
     match &e {
-        ShellVerbError::Unsupported => rust_i18n::t!("file_assoc.windows_only").into_owned(),
         ShellVerbError::Key(..) | ShellVerbError::Write(..) => {
             rust_i18n::t!("file_assoc.registry_write_failed", error = e).into_owned()
         }

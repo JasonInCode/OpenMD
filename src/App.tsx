@@ -20,7 +20,6 @@ import { useTabs } from "./stores/tabs";
 import { useSettings } from "./stores/settings";
 import { useWorkspace } from "./stores/workspace";
 import { useUpdate } from "./stores/update";
-import { IS_STORE_BUILD } from "./lib/build-flags";
 import { openStandaloneFiles } from "./lib/openStandaloneFiles";
 import { IS_MAIN_WINDOW, closeWindow } from "./lib/window";
 import { measureInsertion } from "./lib/tabDrop";
@@ -89,9 +88,8 @@ export default function App() {
   const activeTab = tabs.find((t) => t.id === activeId) ?? tabs[0];
 
   // 启动自动检查更新(GitCode release,带令牌认证);发现新版本时右下角弹更新弹窗。
-  // 商店版(MSIX)更新由商店接管,不做任何应用内更新。
   useEffect(() => {
-    if (!inTauri || IS_STORE_BUILD) return;
+    if (!inTauri) return;
     const timer = window.setTimeout(() => {
       void useUpdate.getState().check();
     }, 1500);
@@ -129,8 +127,6 @@ export default function App() {
       }
     });
     const unlistenTrayCheck = listen("tray-check-update", () => {
-      // 商店版托盘菜单不含此项;双保险避免商店外更新入口。
-      if (IS_STORE_BUILD) return;
       void useUpdate.getState().check().then((result) => {
         if (result === "latest") showNotice(t("shell.upToDate"));
         else if (result === "error") showNotice(t("shell.updateCheckFailed"));

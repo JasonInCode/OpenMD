@@ -8,9 +8,6 @@ editors:
   not_executable: "実行可能ファイルではありません: %{exe}"
   file_not_found: "ファイルが存在しません: %{path}"
   launch_failed: "%{exe} を起動できませんでした: %{error}"
-  launch_failed_no_reason: "%{exe} を起動できませんでした"
-  not_macos_app: "macOS アプリ(.app)ではありません: %{exe}"
-  unsupported_platform: このプラットフォームは「別のアプリで開く」に対応していません
   fallback_name: プログラム
 
 file_assoc:
@@ -18,7 +15,6 @@ file_assoc:
   exe_path_unavailable: "実行ファイルのパスを取得できません: %{error}"
   registry_write_failed: "レジストリの書き込みに失敗しました: %{error}"
   registry_delete_failed: "レジストリキーの削除に失敗しました: %{error}"
-  windows_only: Windows のみ対応
 
 qq_group:
   fallback_group_name: グループ①
@@ -59,4 +55,3 @@ updater:
   cancelled: ダウンロードをキャンセルしました
   incomplete: "ダウンロードが不完全です: 期待 %{expected}、実際 %{actual}"
   launch_failed: "インストーラーを起動できませんでした (エラーコード: %{code})"
-  windows_only: Windows のみ対応
