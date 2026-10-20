@@ -117,13 +117,13 @@ pnpm tauri build        # 产出 src-tauri/target/release/openmd.exe
 
 # 2. 构建卸载器
 cd uninstaller
-npm install --legacy-peer-deps
-npm run tauri:build
+pnpm install
+pnpm tauri build
 cd ..
 
 # 3. 打包 payload 并构建安装器
 cd installer
-npm install --legacy-peer-deps
+pnpm install
 .\pack-payload.ps1      # 将 openmd.exe + md-file.ico + icon.ico + uninstOpenMD.exe 打进 payload.zip
 .\build-installer.ps1   # 产出 OpenMD_{version}_Windows_x86_64.exe
 ```

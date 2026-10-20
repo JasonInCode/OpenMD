@@ -11,7 +11,7 @@ Write-Host "Main app version: $version" -ForegroundColor Cyan
 
 # Build installer
 Set-Location $InstallerProject
-npm run tauri:build
+pnpm tauri build
 if ($LASTEXITCODE -ne 0) { throw "Installer build failed" }
 
 # Rename output (cargo package name: OpenMD-installer; bundle.active=false so no rename by tauri)
