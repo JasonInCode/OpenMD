@@ -1,5 +1,4 @@
 {
-  "stores.tabs.home": "ホーム",
   "stores.tabs.browserPreviewOpenError": "ブラウザプレビューモードで開けるのは public/ 配下のファイルのみです(例: sample.md):{{path}}",
   "stores.tabs.overwriteDiskChanged": "ファイルはディスク上で変更されています。編集内容で上書きしますか?",
   "stores.api.openFileDialogTitle": "Markdown ファイルを開く",

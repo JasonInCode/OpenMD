@@ -1,9 +1,11 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, HStack, IconButton, Text } from "@chakra-ui/react";
 import { AppWindow, ChevronDown, X } from "lucide-react";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
-import { HOME_TAB_ID, isDirty, tabName, useTabs } from "../stores/tabs";
+import { isDirty, useTabs } from "../stores/tabs";
+import { startPress, trackDrag } from "../lib/tabDrag";
+import { watchTabDropHover, type Insertion } from "../lib/tabDrop";
 import { detectEditors, openFileWith, type EditorApp } from "../tauri/api";
 import { ContextMenu, type MenuEntry } from "./ContextMenu";
 import folderExplorerIcon from "../assets/folder-explorer.png";
@@ -56,6 +58,28 @@ function ExplorerIcon({ size = 16 }: { size?: number }) {
       alt=""
       draggable={false}
       style={{ width: size, height: size, flexShrink: 0 }}
+    />
+  );
+}
+
+/**
+ * 别的窗口拖标签过来时的插入线。落点横坐标由 Rust 给(它是唯一知道全局光标与
+ * 各窗口矩形的一方),插入位与线条位置在本窗口的标签栏上量。
+ */
+function TabDropIndicator() {
+  const [insertion, setInsertion] = useState<Insertion | null>(null);
+  useEffect(() => watchTabDropHover(setInsertion), []);
+  if (!insertion) return null;
+  return (
+    <Box
+      position="absolute"
+      top={1}
+      bottom={1}
+      left={insertion.x}
+      w="2px"
+      borderRadius="full"
+      bg="fg"
+      pointerEvents="none"
     />
   );
 }
@@ -199,6 +223,8 @@ export function TabBar() {
         pt={1}
         flex={1}
         minW={0}
+        position="relative"
+        data-tab-strip=""
         overflowX="auto"
         overflowY="hidden"
         css={{
@@ -210,14 +236,17 @@ export function TabBar() {
           return (
             <Box
               key={tab.id}
+              data-tab-id={tab.id}
               as="button"
               onClick={() => setActive(tab.id)}
               // 阻止 WebView2 中键自动滚动,否则 auxclick 不触发、中键关闭失效。
               onMouseDown={(e) => {
                 if (e.button === 1) e.preventDefault();
               }}
+              onPointerDown={(e) => startPress(tab, e)}
+              onPointerMove={trackDrag}
               onAuxClick={(e) => {
-                if (e.button === 1 && tab.id !== HOME_TAB_ID) {
+                if (e.button === 1) {
                   e.preventDefault();
                   void requestCloseTab(tab.id);
                 }
@@ -235,7 +264,7 @@ export function TabBar() {
               userSelect="none"
               bg={active ? "bg.subtle" : "transparent"}
               color="fg"
-              title={tab.path ?? tabName(tab)}
+              title={tab.path}
             >
               {tab.diskChanged && (
                 <Box
@@ -260,25 +289,26 @@ export function TabBar() {
                 />
               )}
               <Text as="span" truncate>
-                {tabName(tab)}
+                {tab.name}
               </Text>
-              {tab.id !== HOME_TAB_ID && (
-                <IconButton
-                  aria-label={t("tabs.tab.close")}
-                  size="2xs"
-                  variant="ghost"
-                  flexShrink={0}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void requestCloseTab(tab.id);
-                  }}
-                >
-                  <X size={12} />
-                </IconButton>
-              )}
+              <IconButton
+                aria-label={t("tabs.tab.close")}
+                size="2xs"
+                variant="ghost"
+                flexShrink={0}
+                // 点 X 只是关闭,别顺手把这一次点击也记成"准备拖拽"。
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void requestCloseTab(tab.id);
+                }}
+              >
+                <X size={12} />
+              </IconButton>
             </Box>
           );
         })}
+        <TabDropIndicator />
       </HStack>
       {/* 最右侧固定的分体式“打开”:[当前选择 | ▾] 不随标签横向滚动。
           主段用当前选择打开,▾ 弹出程序菜单;选择后主段随之变化。 */}

@@ -59,6 +59,83 @@ export interface FileChangedPayload {
   path: string;
 }
 
+// ---- 标签拖拽:拆分与合并 ----
+/** 标签跨窗口搬运的载荷,与 Rust 侧 TabPayload 一一对应。 */
+export interface TabPayload {
+  path: string;
+  name: string;
+  content: string;
+  draft: string | null;
+  lastSavedAt: number;
+  diskChanged: boolean;
+  scrollY: number;
+  error: string | null;
+}
+
+/** 新窗口启动时取走分配给自己的标签。 */
+export interface PendingTab {
+  tab: TabPayload;
+  /** true = 这扇窗口当前还是拖拽中的芯片窗口,只渲染一枚标签。 */
+  ghost: boolean;
+}
+
+export async function takePendingTab(): Promise<PendingTab | null> {
+  return invoke("take_pending_tabs");
+}
+
+/**
+ * 开始一次拖拽:建出跟手光标的芯片窗口,并接管跟手与落点判定。
+ *
+ * `grabX` / `grabY` 是抓取点在标签内的偏移(CSS 像素),`tabWidth` 是标签宽度 ——
+ * 芯片窗口照着做,拖起来才像手里捏着这一枚标签。返回芯片窗口的 label。
+ */
+export async function beginTabDrag(
+  tab: TabPayload,
+  grabX: number,
+  grabY: number,
+  tabWidth: number,
+): Promise<string> {
+  return invoke("begin_tab_drag", { tab, grabX, grabY, tabWidth });
+}
+
+/**
+ * 结束拖拽:落到某个窗口就合并过去,否则让芯片窗口长成独立窗口。幂等 ——
+ * 源窗口与芯片窗口谁先收到 pointerup 都调它,只生效一次。
+ */
+export async function endTabDrag(): Promise<void> {
+  return invoke("end_tab_drag");
+}
+
+export interface TabDropPayload {
+  tab: TabPayload;
+  /** 落点在本窗口内的横坐标(CSS 像素),插入位由本窗口自己算。 */
+  x: number;
+}
+
+/** 别扇窗口拖过来的标签:按落点位置插进标签栏。 */
+export function onTabDrop(handler: (payload: TabDropPayload) => void) {
+  return listen<TabDropPayload>("tab-drop", (event) => handler(event.payload)).catch(
+    () => () => {},
+  );
+}
+
+/** 别扇窗口的标签正悬在本窗口上,x 是光标在本窗口内的横坐标(CSS 像素)。 */
+export function onTabDragHover(handler: (payload: { x: number }) => void) {
+  return listen<{ x: number }>("tab-drag-hover", (event) => handler(event.payload)).catch(
+    () => () => {},
+  );
+}
+
+/** 别扇窗口的标签离开了本窗口:撤掉插入线。 */
+export function onTabDragHoverEnd(handler: () => void) {
+  return listen("tab-drag-hover-end", () => handler()).catch(() => () => {});
+}
+
+/** 芯片窗口落定:该把芯片换成完整界面了。 */
+export function onTabDragSettled(handler: () => void) {
+  return listen("tab-drag-settled", () => handler()).catch(() => () => {});
+}
+
 export function onFileChanged(handler: (payload: FileChangedPayload) => void) {
   // 浏览器预览环境没有事件系统,降级为空监听。
   return listen<FileChangedPayload>("file-changed", (event) => handler(event.payload)).catch(

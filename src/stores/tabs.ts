@@ -11,11 +11,12 @@ import { ask } from "@tauri-apps/plugin-dialog";
 import { dirnameOf, renderFull } from "../renderer/pipeline";
 import { useConfirm } from "./confirm";
 import { useRecent } from "./recent";
+import { IS_MAIN_WINDOW, closeWindow } from "../lib/window";
 
 export interface Tab {
   id: string;
-  /** Absolute file path; null for the home tab. */
-  path: string | null;
+  /** Absolute file path. */
+  path: string;
   name: string;
   /** Raw markdown. */
   content: string;
@@ -36,13 +37,21 @@ export interface Tab {
   error: string | null;
 }
 
+/**
+ * 标签跨窗口搬运时的载荷:除了本地 id 以外的全部状态。未保存的草稿
+ * (`draft`)与滚动位置都在里面,所以标签换了窗口也不会丢编辑内容。
+ */
+export type TransferTab = Omit<Tab, "id">;
+
 /** Tab has unsaved edits. */
 export function isDirty(tab: Tab): boolean {
   return tab.draft !== null && tab.draft !== tab.content;
 }
 
 interface TabsState {
+  /** 打开的标签。空数组 = 首页(主窗口)或该关窗了(其余窗口)。 */
   tabs: Tab[];
+  /** 当前激活的标签 id;没有标签时为空串。 */
   activeId: string;
   /** Open a file (focuses its tab; an already-open file is re-read from disk). */
   openPath: (path: string, opts?: { background?: boolean }) => Promise<void>;
@@ -57,6 +66,14 @@ interface TabsState {
   /** Close with an unsaved-changes confirmation when the tab is dirty. */
   requestCloseTab: (id: string) => Promise<void>;
   closeTab: (id: string) => void;
+  /** 拖出标签时静默摘除:内容跟着标签去了新窗口,不需要未保存询问。 */
+  removeTab: (id: string) => void;
+  /** Same-window reorder (tab dropped back onto its own strip). */
+  moveTab: (id: string, index: number) => void;
+  /** 收下别的窗口拖过来的标签(跨窗口合并的落点)。 */
+  insertTab: (tab: TransferTab, index?: number) => void;
+  /** 关窗口前逐个确认未保存修改;false = 用户取消,窗口别关。 */
+  confirmCloseAll: () => Promise<boolean>;
   setActive: (id: string) => void;
   setScroll: (id: string, y: number) => void;
 }
@@ -84,24 +101,18 @@ async function loadContent(path: string): Promise<string> {
   return resp.text();
 }
 
-export const HOME_TAB_ID = "home";
-
-const HOME_TAB: Tab = {
-  id: HOME_TAB_ID,
-  path: null,
-  // 翻译 key:渲染处(标签栏等)用 tabName() 显示;文件标签仍存真实文件名。
-  name: "stores.tabs.home",
-  content: "",
-  draft: null,
-  lastSavedAt: 0,
-  diskChanged: false,
-  scrollY: 0,
-  error: null,
-};
-
-/** 标签显示名:首页标签存的是翻译 key,按当前语言解析;文件标签返回真实文件名。 */
-export function tabName(tab: Pick<Tab, "name" | "path">): string {
-  return tab.path === null ? i18n.t(tab.name) : tab.name;
+/**
+ * 文档的本地图片只有进 Rust 侧白名单才能被 webview 拉取,而首帧的 `<img>`
+ * 请求与白名单写入存在竞态:请求先到会被拒且 `<img>` 不会重试。所以必须在
+ * 内容落地(触发渲染)之前完成白名单更新。
+ */
+async function allowAssetsOf(documentPath: string, content: string): Promise<void> {
+  try {
+    const r = renderFull(content, dirnameOf(documentPath));
+    await allowAssets(documentPath, r.assetPaths);
+  } catch (e) {
+    console.error("asset preflight failed:", e);
+  }
 }
 
 /** Native confirm dialog; window.confirm in the plain-browser dev mode. */
@@ -110,12 +121,37 @@ async function confirmDialog(message: string): Promise<boolean> {
   return ask(message, { title: "OpenMD", kind: "warning" });
 }
 
+/**
+ * 把一个标签从本窗口摘下来(停监听、顺带把激活项挪到邻居),返回摘完后本窗口
+ * 是否已经没有标签了。关闭与拖出共用这一套记账。
+ */
+function detach(
+  set: (updater: (state: TabsState) => Partial<TabsState>) => void,
+  get: () => TabsState,
+  id: string,
+): boolean {
+  const tab = get().tabs.find((t) => t.id === id);
+  if (!tab) return false;
+  unwatchFile(tab.path).catch(() => {});
+  let empty = false;
+  set((s) => {
+    const idx = s.tabs.findIndex((t) => t.id === id);
+    const tabs = s.tabs.filter((t) => t.id !== id);
+    empty = tabs.length === 0;
+    if (empty) return { tabs, activeId: "" };
+    const activeId =
+      s.activeId === id ? (tabs[Math.min(idx, tabs.length - 1)]?.id ?? tabs[0].id) : s.activeId;
+    return { tabs, activeId };
+  });
+  return empty;
+}
+
 export const useTabs = create<TabsState>((set, get) => ({
-  tabs: [HOME_TAB],
-  activeId: HOME_TAB_ID,
+  tabs: [],
+  activeId: "",
 
   openPath: async (path, opts) => {
-    const existing = get().tabs.find((t) => t.path !== null && t.path === path);
+    const existing = get().tabs.find((t) => t.path === path);
     if (existing) {
       if (opts?.background) return;
       // Re-read: the file may have changed since it was opened.
@@ -128,12 +164,7 @@ export const useTabs = create<TabsState>((set, get) => ({
       try {
         const content = await loadContent(path);
         // 重新打开可能读到引用新图片的内容:同样先入白名单再更新。
-        try {
-          const r = renderFull(content, dirnameOf(path));
-          await allowAssets(path, r.assetPaths);
-        } catch (e) {
-          console.error("asset preflight failed:", e);
-        }
+        await allowAssetsOf(path, content);
         set((s) => ({
           tabs: s.tabs.map((t) => (t.id === existing.id ? { ...t, content, error: null } : t)),
         }));
@@ -147,16 +178,7 @@ export const useTabs = create<TabsState>((set, get) => ({
 
     try {
       const content = await loadContent(path);
-      // 本地图片只有进入 Rust 侧 asset 白名单才能被 webview 拉取,而首帧的
-      // <img> 请求与白名单写入存在竞态:请求先到会被拒且 <img> 不会重试
-      // (切视图重建 DOM 才恢复)。所以必须在落地 tab 状态(触发渲染)之前
-      // 完成白名单更新。
-      try {
-        const r = renderFull(content, dirnameOf(path));
-        await allowAssets(path, r.assetPaths);
-      } catch (e) {
-        console.error("asset preflight failed:", e);
-      }
+      await allowAssetsOf(path, content);
       const tab: Tab = {
         id: nextId(),
         path,
@@ -199,12 +221,7 @@ export const useTabs = create<TabsState>((set, get) => ({
     try {
       const content = await loadContent(path);
       // 外部修改可能引入新图片;先入白名单再更新内容,理由同 openPath。
-      try {
-        const r = renderFull(content, dirnameOf(path));
-        await allowAssets(path, r.assetPaths);
-      } catch (e) {
-        console.error("asset preflight failed:", e);
-      }
+      await allowAssetsOf(path, content);
       set((s) => ({
         tabs: s.tabs.map((t) =>
           t.id === tab.id
@@ -264,13 +281,7 @@ export const useTabs = create<TabsState>((set, get) => ({
       // Newly referenced local images need the asset allowlist; the watcher
       // suppression window covers our own write (see App.tsx). Awaiting it
       // keeps the post-save re-render from racing the allowlist (see openPath).
-      const path = tab.path;
-      try {
-        const r = renderFull(text, dirnameOf(path));
-        await allowAssets(path, r.assetPaths);
-      } catch (e) {
-        console.error("asset preflight failed:", e);
-      }
+      await allowAssetsOf(tab.path, text);
       set((s) => ({
         tabs: s.tabs.map((t) =>
           t.id === id
@@ -302,24 +313,57 @@ export const useTabs = create<TabsState>((set, get) => ({
   },
 
   closeTab: (id) => {
-    const tab = get().tabs.find((t) => t.id === id);
-    if (!tab) return;
-    if (tab.path) {
-      unwatchFile(tab.path).catch(() => {});
-    }
+    const empty = detach(set, get, id);
+    // 拆分窗口标签关光 = 这扇窗口的任务完成了,跟着关掉。
+    if (empty && !IS_MAIN_WINDOW) closeWindow();
+  },
+
+  removeTab: (id) => {
+    detach(set, get, id);
+  },
+
+  moveTab: (id, index) => {
+    if (!get().tabs.some((t) => t.id === id)) return;
     set((s) => {
-      const idx = s.tabs.findIndex((t) => t.id === id);
-      const tabs = s.tabs.filter((t) => t.id !== id);
-      if (tabs.length === 0) {
-        return { tabs: [HOME_TAB], activeId: HOME_TAB_ID };
-      }
-      const activeId =
-        s.activeId === id ? (tabs[Math.min(idx, tabs.length - 1)]?.id ?? tabs[0].id) : s.activeId;
-      return { tabs, activeId };
+      const from = s.tabs.findIndex((t) => t.id === id);
+      const next = [...s.tabs];
+      const [tab] = next.splice(from, 1);
+      next.splice(Math.max(0, Math.min(index, next.length)), 0, tab);
+      return { tabs: next };
     });
   },
 
-  setActive: (id) => set({ activeId: id }),
+  insertTab: (payload, index) => {
+    const tab: Tab = { ...payload, id: nextId() };
+    set((s) => {
+      const next = [...s.tabs];
+      next.splice(Math.max(0, Math.min(index ?? next.length, next.length)), 0, tab);
+      return { tabs: next, activeId: tab.id };
+    });
+    watchFile(tab.path).catch((e) => console.error("watch_file failed:", e));
+  },
+
+  confirmCloseAll: async () => {
+    for (const tab of get().tabs) {
+      if (!isDirty(tab)) continue;
+      const choice = await useConfirm.getState().requestUnsaved(tab.name);
+      if (choice === "cancel") return false;
+      if (choice === "save") {
+        await get().saveTab(tab.id);
+        const after = get().tabs.find((t) => t.id === tab.id);
+        // 磁盘冲突被取消时标签仍是脏的,别把用户的编辑静默丢在关掉的窗口里。
+        if (after && isDirty(after)) return false;
+      }
+    }
+    return true;
+  },
+
+  setActive: (id) => {
+    // 拖拽开始后标签会被摘掉,但浏览器仍会补发一次 click:那时标签已经不在了,
+    // 激活一个不存在的 id 会让整条激活链停在空档上。
+    if (!get().tabs.some((t) => t.id === id)) return;
+    set({ activeId: id });
+  },
 
   setScroll: (id, y) =>
     set((s) => ({

@@ -10,7 +10,7 @@ pub const TRAY_ID: &str = "main-tray";
 
 /// 显示并聚焦主窗口(托盘唤起 / 第二实例转发文件时使用)。
 pub fn show_main_window(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
+    if let Some(window) = app.get_webview_window(crate::MAIN_WINDOW) {
         let _ = window.show();
         let _ = window.unminimize();
         let _ = window.set_focus();
@@ -51,7 +51,7 @@ pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
             "show" => show_main_window(app),
             // 检查更新由前端执行(复用更新弹窗与提示逻辑)
             "check-update" => {
-                let _ = app.emit("tray-check-update", ());
+                let _ = app.emit_to(crate::MAIN_WINDOW, "tray-check-update", ());
             }
             "quit" => app.exit(0),
             _ => {}

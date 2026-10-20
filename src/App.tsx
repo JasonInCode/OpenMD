@@ -12,15 +12,19 @@ import { MarkdownView } from "./components/MarkdownView";
 import { EmptyState } from "./components/EmptyState";
 import { StatusBar } from "./components/StatusBar";
 import { UpdatePopup } from "./components/UpdatePopup";
+import { TabGhost } from "./components/TabGhost";
 import { AppBackground } from "./components/AppBackground";
 import { CloseDialog } from "./components/CloseDialog";
 import { UnsavedDialog } from "./components/UnsavedDialog";
-import { HOME_TAB_ID, useTabs } from "./stores/tabs";
+import { useTabs } from "./stores/tabs";
 import { useSettings } from "./stores/settings";
 import { useWorkspace } from "./stores/workspace";
 import { useUpdate } from "./stores/update";
 import { IS_STORE_BUILD } from "./lib/build-flags";
 import { openStandaloneFiles } from "./lib/openStandaloneFiles";
+import { IS_MAIN_WINDOW, closeWindow } from "./lib/window";
+import { measureInsertion } from "./lib/tabDrop";
+import { watchChipDrag } from "./lib/tabDrag";
 import { viewInAnimation } from "./theme/theme";
 import {
   getOpenedFiles,
@@ -29,9 +33,12 @@ import {
   MARKDOWN_EXTENSIONS,
   onFileChanged,
   onOpenedFiles,
+  onTabDragSettled,
+  onTabDrop,
   onWorkspaceChanged,
   openFileDialog,
   openFolderDialog,
+  takePendingTab,
 } from "./tauri/api";
 
 /** True when running inside the Tauri webview (false in a plain browser). */
@@ -40,21 +47,6 @@ const inTauri = "__TAURI_INTERNALS__" in window;
 function isMarkdownPath(p: string): boolean {
   const ext = p.split(".").pop()?.toLowerCase() ?? "";
   return MARKDOWN_EXTENSIONS.includes(ext);
-}
-
-/**
- * 取走 Rust 侧积压的打开请求并打开。前端是队列的唯一消费者:事件只是敲门声,
- * 真正的路径一律从 `getOpenedFiles` 取,所以漏掉一次事件最多晚一个敲门周期。
- */
-async function drainOpenedFiles(): Promise<void> {
-  if (!inTauri) return;
-  const paths = await getOpenedFiles().catch((e) => {
-    void logAssoc(`getOpenedFiles FAILED: ${e}`);
-    return [];
-  });
-  if (paths.length === 0) return;
-  void logAssoc(`drained ${paths.length} pending: ${paths.join(", ")}`);
-  await openStandaloneFiles(paths);
 }
 
 export default function App() {
@@ -98,6 +90,16 @@ export default function App() {
   useEffect(() => {
     if (!inTauri) return;
     const unlistenClose = listen("close-requested", () => {
+      // 拆分出来的窗口点 X 就是关掉它:先把未保存修改逐个问清楚,用户取消就留着。
+      if (!IS_MAIN_WINDOW) {
+        void useTabs
+          .getState()
+          .confirmCloseAll()
+          .then((ok) => {
+            if (ok) closeWindow();
+          });
+        return;
+      }
       const action = useSettings.getState().closeAction;
       if (action === "tray") {
         void invoke("hide_to_tray").catch(() => {});
@@ -161,11 +163,29 @@ export default function App() {
   // /拖拽缓冲的文件请求。在纯浏览器环境(开发预览)不处理。
   // startupReady:启动排水(打开关联文件)完成前不渲染首页,避免闪一下主页。
   const [startupReady, setStartupReady] = useState(!inTauri);
+  // 芯片窗口:这扇窗口此刻只是一枚跟手的标签,落定后才展开成完整界面。
+  const [ghost, setGhost] = useState(false);
   useEffect(() => {
     if (restoredRef.current) return;
     restoredRef.current = true;
-    void (async () => {
-      await drainOpenedFiles();
+    (async () => {
+      if (inTauri) {
+        // 拖标签拆出来的窗口:标签在建窗时就分配好了,先取回来。
+        const pending = await takePendingTab().catch(() => null);
+        if (pending) {
+          useTabs.getState().insertTab(pending.tab);
+          setGhost(pending.ghost);
+        }
+        // 系统"打开方式"的缓冲只有主窗口该排空:新窗口排空了会把待打开的文件抢走。
+        if (IS_MAIN_WINDOW) {
+          const buffered = await getOpenedFiles().catch((e) => {
+            void logAssoc(`startup getOpenedFiles FAILED: ${e}`);
+            return [];
+          });
+          void logAssoc(`startup drained ${buffered.length} buffered: ${buffered.join(", ")}`);
+          await openStandaloneFiles(buffered);
+        }
+      }
       setStartupReady(true);
     })();
   }, []);
@@ -191,8 +211,9 @@ export default function App() {
         }, COALESCE_MS),
       );
     });
-    const unlistenOpened = onOpenedFiles(() => {
-      void drainOpenedFiles();
+    const unlistenOpened = onOpenedFiles((paths) => {
+      void logAssoc(`frontend opened-files event: ${paths.join(", ")}`);
+      void openStandaloneFiles(paths);
     });
     // 工作区目录树的外部变更(store 内部有拖尾合并,重拉展开目录)
     const unlistenWorkspace = onWorkspaceChanged(({ path }) => {
@@ -244,6 +265,50 @@ export default function App() {
     };
   }, []);
 
+  // 别的窗口把标签拖到本窗口:按落点位置插进标签栏(插入位由本窗口的标签栏量)。
+  useEffect(() => {
+    if (!inTauri) return;
+    const unlisten = onTabDrop(({ tab, x }) => {
+      useTabs.getState().insertTab(tab, measureInsertion(x)?.index);
+    });
+    return () => {
+      unlisten.then((fn) => fn()).catch(() => {});
+    };
+  }, []);
+
+  // 芯片窗口落定:换成完整界面。
+  useEffect(() => {
+    if (!inTauri) return;
+    const unlisten = onTabDragSettled(() => setGhost(false));
+    return () => {
+      unlisten.then((fn) => fn()).catch(() => {});
+    };
+  }, []);
+
+  // 芯片窗口的兜底收尾:松手事件万一落到它身上(指针捕获在个别平台可能丢),
+  // 也把这一场拖拽结算掉。同一个命令幂等,不会重复结算。
+  useEffect(() => {
+    if (!ghost) return;
+    return watchChipDrag();
+  }, [ghost]);
+
+  // 设置跨窗口实时同步:各窗口共用一份 localStorage,但 zustand 不会自动收
+  // storage 事件,一个窗口改了字号/主题,其他窗口得自己跟上。
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== "openmd-settings" || !e.newValue) return;
+      const incoming = (JSON.parse(e.newValue) as { state?: Record<string, unknown> }).state;
+      if (!incoming) return;
+      const current = useSettings.getState() as unknown as Record<string, unknown>;
+      // 值全一样就别写回:persist 每次 setState 都落盘,不挡住相等状态就会
+      // A 写 → B 应用 → B 写 → A 应用 无限对敲。
+      if (Object.entries(incoming).every(([key, value]) => current[key] === value)) return;
+      useSettings.setState(incoming);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   // Window title follows the active tab.
   useEffect(() => {
     if (!inTauri) return;
@@ -278,7 +343,7 @@ export default function App() {
             .catch((err) => setOpenError(String(err)));
         }
       } else if (key === "w") {
-        if (state.activeId !== HOME_TAB_ID) {
+        if (state.activeId) {
           e.preventDefault();
           void state.requestCloseTab(state.activeId);
         }
@@ -315,9 +380,9 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const showSidebar = tocOpen && activeTab?.path !== null && activeTab !== undefined;
-  // 首页(无文档打开)整页留白,只显示居中文字 Logo。
-  const isHome = !activeTab?.path;
+  const showSidebar = tocOpen && activeTab !== undefined;
+  // 一个标签都没有 = 首页:整页留白,只显示居中文字 Logo。
+  const isHome = tabs.length === 0;
   // 启动排水未完成前只渲染空白底色(正在打开关联文件),避免首页闪现。
 
   return (
@@ -332,6 +397,8 @@ export default function App() {
       <AppBackground />
       {!startupReady ? (
         <Box flex={1} bg="bg" />
+      ) : ghost ? (
+        <TabGhost />
       ) : isHome ? (
         <EmptyState />
       ) : (
