@@ -77,7 +77,7 @@ export function WorkspaceTree() {
   const activePath = useTabs((s) => s.tabs.find((x) => x.id === s.activeId)?.path ?? null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  // 直接切到文件 Tab(未经过 openFolder,比如启动恢复)时补一次根加载
+  // 根目录挂上后补一次子项加载(树晚于 openFolder 挂载时也能有内容)。
   useEffect(() => {
     if (root) void ensureLoaded(root);
   }, [root, ensureLoaded]);

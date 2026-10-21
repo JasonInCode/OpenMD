@@ -6,47 +6,16 @@ import {
   watchWorkspace,
   type WorkspaceEntry,
 } from "../tauri/api";
-import { IS_MAIN_WINDOW } from "../lib/window";
 
 /** True when running inside the Tauri webview (false in a plain browser). */
 const IN_TAURI = "__TAURI_INTERNALS__" in window;
 
-const STORAGE_KEY = "openmd-workspace";
-
 /**
- * 记住的「最近打开的文件夹」。文件夹在自己的窗口里打开,所以这份记忆是全局的:
- * 哪个窗口打开了文件夹就写哪一份,主窗口启动时读回来。
+ * 工作区 = 某个文件夹在一扇窗口里的目录树。
+ *
+ * 文件夹有自己的窗口,所以工作区既不跨窗口也不跨启动记忆:每扇窗口的目录树
+ * 只来自它自己打开的那个文件夹,共用的文档窗口永远没有目录树。
  */
-interface SavedWorkspace {
-  root: string;
-  expanded: string[];
-}
-
-function persist(root: string | null, expanded: Set<string>) {
-  try {
-    if (!root) {
-      localStorage.removeItem(STORAGE_KEY);
-    } else {
-      const saved: SavedWorkspace = { root, expanded: Array.from(expanded) };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
-    }
-  } catch {
-    /* localStorage 不可用(隐私模式等)时只影响跨启动记忆 */
-  }
-}
-
-function restore(): SavedWorkspace | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const saved = JSON.parse(raw) as SavedWorkspace;
-    if (typeof saved?.root !== "string" || saved.root === "") return null;
-    return saved;
-  } catch {
-    return null;
-  }
-}
-
 interface WorkspaceState {
   /** 工作区根目录;null = 未打开。 */
   root: string | null;
@@ -54,19 +23,14 @@ interface WorkspaceState {
   expanded: Set<string>;
   /** 已加载目录的子项缓存(path → entries)。 */
   children: Map<string, WorkspaceEntry[]>;
-  /** 根目录下的文档总数(递归、有上限探测);null = 未知/尚未探测。 */
-  fileCount: number | null;
   /**
    * 打开文件夹为工作区(重复打开同一目录不会重建监听;换目录会替换旧监听)。
-   * 返回根目录下的文档清单摘要,调用方据此决定是否"立刻预览第一篇"
-   * (主页/标题栏要,拖拽与快捷键的语境不一定)。
+   * 返回根目录下的文档清单摘要,调用方据此决定是否"立刻预览第一篇"。
    */
   openFolder: (path: string) => Promise<{ count: number; firstDoc: string | null }>;
-  /** 关闭工作区:停止监听、清空树和持久化。 */
-  close: () => Promise<void>;
   /** 展开/收起一个目录(子项懒加载)。 */
   toggleDir: (path: string) => Promise<void>;
-  /** 首次进入文件 Tab / 根恢复后确保根已加载。 */
+  /** 根目录挂上后确保它的子项已加载。 */
   ensureLoaded: (path: string) => Promise<void>;
   /** workspace-changed 事件入口:合并突发事件后重拉所有展开目录。 */
   refresh: (path: string) => void;
@@ -94,19 +58,16 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   root: null,
   expanded: new Set(),
   children: new Map(),
-  fileCount: null,
 
   openFolder: async (path) => {
-    // 启动时会恢复上次工作区；用户再次从主页选择同一目录时，不能把这次
-    // 显式操作当成幂等 no-op，否则调用方拿不到 firstDoc，界面看起来毫无反应。
+    // 重复打开同一目录时不重建监听:监听重建会把已展开的子目录清掉。
     if (get().root !== path) {
       const prev = get().root;
       if (prev && IN_TAURI) {
         await unwatchWorkspace(prev).catch(() => {});
       }
       const expanded = new Set([path]);
-      set({ root: path, expanded, children: new Map(), fileCount: null });
-      persist(path, expanded);
+      set({ root: path, expanded, children: new Map() });
       if (IN_TAURI) {
         watchWorkspace(path).catch((e) => console.error("watch_workspace failed:", e));
       }
@@ -114,21 +75,9 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
     await get().ensureLoaded(path);
     // 文档清单既当计数,又用来挑"打开文件夹后立刻预览"的那篇。
     const docs = await listWorkspaceDocs(path);
-    // 期间用户可能已经换了别的目录(或关掉了工作区):这份结果作废。
-    if (get().root !== path) return { count: docs.length, firstDoc: docs[0] ?? null };
-    set({ fileCount: docs.length });
     // 有 Markdown 文档就打开第一篇(递归结果里目录树自然序的第一个),让调用方
     // 能把用户直接送进预览页;一篇都没有时停在侧栏空态,不制造空白预览页。
     return { count: docs.length, firstDoc: docs[0] ?? null };
-  },
-
-  close: async () => {
-    const prev = get().root;
-    if (prev && IN_TAURI) {
-      await unwatchWorkspace(prev).catch(() => {});
-    }
-    set({ root: null, expanded: new Set(), children: new Map(), fileCount: null });
-    persist(null, new Set());
   },
 
   toggleDir: async (path) => {
@@ -136,12 +85,10 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
     if (expanded.has(path)) {
       expanded.delete(path);
       set({ expanded });
-      persist(get().root, expanded);
       return;
     }
     expanded.add(path);
     set({ expanded });
-    persist(get().root, expanded);
     await get().ensureLoaded(path);
   },
 
@@ -174,7 +121,6 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
             next.delete(dir);
             const children = new Map(s.children);
             children.delete(dir);
-            persist(s.root, next);
             return { expanded: next, children };
           });
         }
@@ -182,19 +128,3 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
     }, 150);
   },
 }));
-
-// 跨启动记忆:主窗口启动即恢复上次打开的文件夹(应用仍停留在首页,打开任意
-// 文档后侧栏文件 Tab 立即有树)。其余窗口的内容都是显式分配的(打开文件夹时
-// 新建的窗口拿自己的文件夹,拖标签拆出来的窗口拿自己的标签),不恢复 ——
-// 否则会先把上一个文件夹的树挂上,再被自己的内容替换掉。
-// 浏览器预览环境无文件 IO,只恢复不加载。
-const saved = IS_MAIN_WINDOW ? restore() : null;
-if (saved) {
-  const expanded = new Set([saved.root, ...saved.expanded]);
-  useWorkspace.setState({ root: saved.root, expanded });
-  persist(saved.root, expanded);
-  if (IN_TAURI) {
-    watchWorkspace(saved.root).catch(() => {});
-    void useWorkspace.getState().ensureLoaded(saved.root);
-  }
-}
