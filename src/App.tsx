@@ -18,7 +18,7 @@ import { UnsavedDialog } from "./components/UnsavedDialog";
 import { SettingsModal } from "./components/SettingsModal";
 import { useUI } from "./stores/ui";
 import { useTabs } from "./stores/tabs";
-import { useSettings } from "./stores/settings";
+import { DEFAULT_FONT_SIZE, useSettings } from "./stores/settings";
 import { useWorkspace } from "./stores/workspace";
 import { openStandaloneFiles } from "./lib/openStandaloneFiles";
 import { IS_MAIN_WINDOW, closeWindow } from "./lib/window";
@@ -350,7 +350,7 @@ export default function App() {
         setFontSize(fontSize - 1);
       } else if (e.key === "0") {
         e.preventDefault();
-        useSettings.getState().setFontSize(17);
+        useSettings.getState().setFontSize(DEFAULT_FONT_SIZE);
       }
     };
     window.addEventListener("keydown", onKey);

@@ -9,6 +9,13 @@ export type Language = "auto" | "zh" | "zh-TW" | "ja" | "en";
 /** 统一侧栏的 Tab:目录(本文档大纲)或 文件(工作区目录树)。 */
 export type SidebarTab = "toc" | "files";
 
+/** 正文字号默认值(px)。 */
+export const DEFAULT_FONT_SIZE = 17;
+/** 正文字号下限(px)。 */
+export const MIN_FONT_SIZE = 13;
+/** 正文字号上限(px)。 */
+export const MAX_FONT_SIZE = 28;
+
 /** 预览正文左右内边距的默认值(px),对齐预设"适中";"铺满"即把边距置 0。 */
 export const DEFAULT_CONTENT_PADDING = 200;
 /** 左右内边距上限(px)。去掉 820px 宽度上限后,宽屏需更大的边距才能收窄阅读栏。 */
@@ -20,7 +27,7 @@ export const DEFAULT_BACKGROUND_BLUR = 16;
 export const MAX_BACKGROUND_BLUR = 60;
 
 interface SettingsState {
-  /** Body font size in px. */
+  /** 正文字号(px)。 */
   fontSize: number;
   tocOpen: boolean;
   /** 侧栏当前显示哪个 Tab(侧栏开关仍是 tocOpen)。 */
@@ -56,7 +63,7 @@ interface SettingsState {
 export const useSettings = create<SettingsState>()(
   persist(
     (set) => ({
-      fontSize: 17,
+      fontSize: DEFAULT_FONT_SIZE,
       tocOpen: true,
       sidebarTab: "toc",
       contentPadding: DEFAULT_CONTENT_PADDING,
@@ -67,7 +74,8 @@ export const useSettings = create<SettingsState>()(
       closeAction: "ask",
       language: "auto",
       // 字号滑动过渡在 MarkdownView 的 font-size transition 中实现。
-      setFontSize: (n) => set({ fontSize: Math.min(28, Math.max(13, n)) }),
+      setFontSize: (n) =>
+        set({ fontSize: Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, n)) }),
       toggleToc: () => set((s) => ({ tocOpen: !s.tocOpen })),
       setSidebarTab: (v) => set({ sidebarTab: v }),
       // 预览左右边距:0-480px,与字号一样做钳制,避免滑块/输入越界。
