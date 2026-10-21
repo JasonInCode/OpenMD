@@ -34,6 +34,11 @@ import {
 import hljs from "../renderer/hljs";
 import { extractToc, isObserverPaused, useToc } from "../stores/toc";
 import {
+  refreshSearch,
+  registerSearchRoot,
+  scheduleSearchRefresh,
+} from "../lib/documentSearch";
+import {
   allowAssets,
   importImage,
   openImageDialog,
@@ -339,6 +344,17 @@ export function MarkdownView({ tab }: { tab: Tab }) {
   const lastScrollSyncRef = useRef(0);
   const userScrolledRef = useRef(false);
 
+  // 查找根节点跟着当前视图走:预览模式是正文,代码视图是源码层。
+  useEffect(() => {
+    registerSearchRoot(viewMode === "code" ? codePreRef.current : articleRef.current);
+    return () => registerSearchRoot(null);
+  }, [viewMode, tab.id]);
+
+  // 正文重渲染后重算命中:React 换了 innerHTML,上一次的命中位置全部失效。
+  useEffect(() => {
+    refreshSearch();
+  }, [html, codeHtml]);
+
   // Post-render pass: TOC extraction, observer, copy buttons, link handlers.
   // 代码视图:目录从原始源码解析,滚动跟随观察代码里的标题行 span。
   useEffect(() => {
@@ -373,9 +389,10 @@ export function MarkdownView({ tab }: { tab: Tab }) {
     void renderRichBlocks(article, isDark, {
       root: useWorkspace.getState().root ?? undefined,
       fromPath: tab.path,
-    }).catch((e) =>
-      console.error("rich block render failed:", e),
-    );
+    })
+      .catch((e) => console.error("rich block render failed:", e))
+      // 富块会把源码块换成渲染结果,命中位置要跟着重算。
+      .finally(() => refreshSearch());
 
     // 兜底自愈:若有图片请求仍抢在白名单写入之前到达(未被上层路径覆盖的
     // 时序),它会被拒且 <img> 不重试。白名单就绪后,对仍处于失败状态
@@ -671,6 +688,8 @@ export function MarkdownView({ tab }: { tab: Tab }) {
       imgRedoRef.current = [];
       previewMutationsRef.current.push(...relevant);
       schedulePreviewPatch();
+      // 正文文字变了,命中位置跟着失效,重新算一遍。
+      scheduleSearchRefresh();
     });
     observer.observe(article, { childList: true, subtree: true, characterData: true });
     return () => {

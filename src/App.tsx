@@ -18,6 +18,7 @@ import { useTabs } from "./stores/tabs";
 import { DEFAULT_FONT_SIZE, useSettings } from "./stores/settings";
 import { useWorkspace } from "./stores/workspace";
 import { openStandaloneFiles } from "./lib/openStandaloneFiles";
+import { toggleSearch, closeSearch } from "./lib/documentSearch";
 import { IS_MAIN_WINDOW, WINDOW_LABEL, closeWindow } from "./lib/window";
 import { measureInsertion } from "./lib/tabDrop";
 import { watchChipDrag } from "./lib/tabDrag";
@@ -291,6 +292,12 @@ export default function App() {
       .catch(() => {});
   }, [activeTab]);
 
+  // 搜索框是针对当前文档的:没有文档时收起来,别把上一份的查询词带到下一个文档。
+  useEffect(() => {
+    if (activeId) return;
+    closeSearch();
+  }, [activeId]);
+
   // Keyboard shortcuts.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -336,6 +343,16 @@ export default function App() {
       } else if (key === "b") {
         e.preventDefault();
         useSettings.getState().toggleToc();
+      } else if (key === "f") {
+        // preventDefault 不能省:WebView2 默认自己处理 Ctrl+F,会弹出内建的查找气泡
+        // (浮在顶栏上)。压住它,页内查找才只由顶栏那个搜索框承担。
+        e.preventDefault();
+        // 首页没有正文,搜索框无处可放;顺手把可能残留的搜索状态收掉。
+        if (!state.activeId) {
+          closeSearch();
+          return;
+        }
+        toggleSearch();
       } else if (e.key === "=" || e.key === "+") {
         e.preventDefault();
         const { fontSize, setFontSize } = useSettings.getState();

@@ -931,3 +931,13 @@
   box-shadow: 0 0 0 1px var(--md-edit-ring, rgba(127, 127, 127, 0.25));
   border-radius: 10px;
 }
+
+/* =========================================================
+   查找高亮:CSS Custom Highlight API 只画颜色,不动 DOM。
+   ========================================================= */
+::highlight(md-find) {
+  background-color: rgba(250, 204, 21, 0.45);
+}
+::highlight(md-find-current) {
+  background-color: rgba(249, 115, 22, 0.9);
+}

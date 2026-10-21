@@ -32,6 +32,7 @@ import { openFolderInNewWindow } from "../lib/openFolder";
 import { openStandaloneFiles } from "../lib/openStandaloneFiles";
 import { isDirty, useTabs } from "../stores/tabs";
 import { TabBar } from "./TabBar";
+import { TitleBarSearch } from "./TitleBarSearch";
 import { WindowControls } from "./WindowControls";
 import { TitleBarSliderControl } from "./TitleBarSliderControl";
 
@@ -250,6 +251,9 @@ export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void 
 
       {/* 右侧功能组与窗口控制。 */}
       <HStack gap={1} alignItems="center" flexShrink={0} data-tauri-drag-region="">
+        {/* 搜索框:平时不显示,Ctrl+F 唤出。 */}
+        <TitleBarSearch compact={compact} />
+
         {compact ? (
           <IconButton
             aria-label="目录栏"
