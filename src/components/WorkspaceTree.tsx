@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import { Box, Button, Text, VStack } from "@chakra-ui/react";
-import { ChevronDown, ChevronRight, FileText, Folder, FolderOpen } from "lucide-react";
+import { Box, Text } from "@chakra-ui/react";
+import { ChevronDown, ChevronRight, FileText, Folder } from "lucide-react";
 import { useTabs } from "../stores/tabs";
 import { useWorkspace } from "../stores/workspace";
 import { FloatingScrollbar } from "./FloatingScrollbar";
@@ -65,9 +65,9 @@ function Row({ name, depth, isDir, expanded, active, onClick }: RowProps) {
 /**
  * 工作区目录树:根目录 + 懒加载一层层展开的子目录。文件点击走 tabs 的
  * openPath(打开成标签页,工作区上下文不动);活动文件跟随当前标签高亮。
- * 未打开工作区时显示引导按钮。浏览器预览环境没有文件 IO,树保持为空。
+ * 没有工作区时这一栏根本不出现,树随之为空。
  */
-export function WorkspaceTree({ onOpenFolder }: { onOpenFolder: () => void }) {
+export function WorkspaceTree() {
   const root = useWorkspace((s) => s.root);
   const expanded = useWorkspace((s) => s.expanded);
   const children = useWorkspace((s) => s.children);
@@ -82,28 +82,7 @@ export function WorkspaceTree({ onOpenFolder }: { onOpenFolder: () => void }) {
     if (root) void ensureLoaded(root);
   }, [root, ensureLoaded]);
 
-  if (!root) {
-    return (
-      <VStack gap={3} px={4} py={10} align="center">
-        <FolderOpen size={22} color="var(--chakra-colors-fg-subtle)" />
-        <Text fontSize="xs" color="fg.subtle" textAlign="center" lineHeight="1.6">
-          打开一个文件夹，浏览其中的 Markdown 文件
-        </Text>
-        <Button
-          size="xs"
-          variant="outline"
-          borderColor="fg.muted"
-          color="fg"
-          borderRadius="6px"
-          _hover={{ bg: "fg", color: "bg", borderColor: "fg" }}
-          onClick={onOpenFolder}
-        >
-          <FolderOpen size={13} />
-          打开文件夹
-        </Button>
-      </VStack>
-    );
-  }
+  if (!root) return null;
 
   const renderNodes = (dir: string, depth: number): ReactNode[] => {
     const entries = children.get(dir);

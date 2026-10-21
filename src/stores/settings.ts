@@ -4,8 +4,6 @@ import { persist } from "zustand/middleware";
 export type ViewMode = "preview" | "code";
 /** 关闭窗口行为:每次询问 / 隐藏到托盘 / 直接退出。 */
 export type CloseAction = "ask" | "tray" | "exit";
-/** 统一侧栏的 Tab:目录(本文档大纲)或 文件(工作区目录树)。 */
-export type SidebarTab = "toc" | "files";
 
 /** 正文字号默认值(px)。 */
 export const DEFAULT_FONT_SIZE = 17;
@@ -27,9 +25,8 @@ export const MAX_BACKGROUND_BLUR = 60;
 interface SettingsState {
   /** 正文字号(px)。 */
   fontSize: number;
+  /** 右侧目录栏(本文档大纲)是否展开。 */
   tocOpen: boolean;
-  /** 侧栏当前显示哪个 Tab(侧栏开关仍是 tocOpen)。 */
-  sidebarTab: SidebarTab;
   /**
    * 预览正文左右内边距(px),全局唯一值。
    * 0 即"铺满"(内容撑满窗口、无左右留白);不再是独立的铺满开关。
@@ -47,7 +44,6 @@ interface SettingsState {
   closeAction: CloseAction;
   setFontSize: (n: number) => void;
   toggleToc: () => void;
-  setSidebarTab: (v: SidebarTab) => void;
   setContentPadding: (n: number) => void;
   setBackgroundImage: (path: string | null) => void;
   setBackgroundBlur: (n: number) => void;
@@ -61,7 +57,6 @@ export const useSettings = create<SettingsState>()(
     (set) => ({
       fontSize: DEFAULT_FONT_SIZE,
       tocOpen: true,
-      sidebarTab: "toc",
       contentPadding: DEFAULT_CONTENT_PADDING,
       backgroundImage: null,
       backgroundBlur: DEFAULT_BACKGROUND_BLUR,
@@ -72,7 +67,6 @@ export const useSettings = create<SettingsState>()(
       setFontSize: (n) =>
         set({ fontSize: Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, n)) }),
       toggleToc: () => set((s) => ({ tocOpen: !s.tocOpen })),
-      setSidebarTab: (v) => set({ sidebarTab: v }),
       // 预览左右边距:0-480px,与字号一样做钳制,避免滑块/输入越界。
       setContentPadding: (n) =>
         set({ contentPadding: Math.min(MAX_CONTENT_PADDING, Math.max(0, n)) }),

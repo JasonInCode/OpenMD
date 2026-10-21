@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
-  Grid,
   HStack,
   IconButton,
   Menu,
@@ -16,7 +15,7 @@ import {
   FileText,
   FolderOpen,
   FolderTree,
-  PanelLeft,
+  PanelRight,
   Pencil,
   Save,
   StretchHorizontal,
@@ -32,6 +31,7 @@ import { openFolderDialog, openFileDialog } from "../tauri/api";
 import { openFolderAsWorkspace } from "../lib/openFolderAsWorkspace";
 import { openStandaloneFiles } from "../lib/openStandaloneFiles";
 import { isDirty, useTabs } from "../stores/tabs";
+import { TabBar } from "./TabBar";
 import { WindowControls } from "./WindowControls";
 import { TitleBarSliderControl } from "./TitleBarSliderControl";
 
@@ -41,8 +41,6 @@ export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void 
     setFontSize,
     tocOpen,
     toggleToc,
-    sidebarTab,
-    setSidebarTab,
     contentPadding,
     setContentPadding,
     editMode,
@@ -56,9 +54,9 @@ export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void 
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme !== "light";
 
-  // 窄窗口下中间控件会挤压 WindowControls;
-  // 改走图标-only:logo(左)与 WindowControls(右)固定不动,中间操作区在不够宽时退化为图标。
-  // 阈值参考:打开/目录/边距/字号按钮全部展开大约 900px;低于此值切紧凑模式。
+  // 窄窗口下右侧控件会挤压标签栏;
+  // 改走图标-only:logo(左)与 WindowControls(右)固定不动,右侧操作区在不够宽时退化为图标。
+  // 阈值参考:右侧操作区全部展开大约 350px,加上左侧固定簇约 240px,低于 900px 切紧凑模式。
   const COMPACT_THRESHOLD = 900;
   const [compact, setCompact] = useState(
     typeof window !== "undefined" && window.innerWidth < COMPACT_THRESHOLD,
@@ -103,12 +101,7 @@ export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void 
     }
   };
 
-  // 目录按钮与 Tab 联动:侧栏开着但显示文件页时,点击是切换而不是关闭。
-  const tocShown = tocOpen && sidebarTab === "toc";
   const handleWorkspace = async () => {
-    // 打开文件夹是内容操作,不应复用侧栏按钮的收起逻辑。
-    setSidebarTab("files");
-    if (!tocOpen) toggleToc();
     const picked = await openFolderDialog().catch((e) => {
       onOpenError?.(String(e));
       return null;
@@ -116,17 +109,11 @@ export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void 
     if (!picked) return;
     await openFolderAsWorkspace(picked);
   };
-  const handleTocButton = () => {
-    if (tocOpen && sidebarTab === "files") {
-      setSidebarTab("toc");
-      return;
-    }
-    toggleToc();
-  };
 
-  // 三列网格:左 Logo、中功能、右窗口控制,保证功能组在窗口中真正居中。
+  // 顶栏一行三段:左侧固定簇(Logo 与 打开/编辑/保存,彼此 4px)、中间标签栏、
+  // 右侧功能组(目录/边距/字号)与窗口控制。标签栏吃掉中间剩余宽度,放不下就横向滚动。
   // 去原生标题栏后,整条顶栏都是拖拽区(data-tauri-drag-region);
-  // 按钮自身不带该属性,点击不受影响。双击拖拽区可最大化/还原。
+  // 按钮与标签自带可点击语义,点击不受影响。双击拖拽区可最大化/还原。
   return (
     <Box
       as="header"
@@ -137,250 +124,240 @@ export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void 
       userSelect="none"
       display="flex"
       alignItems="center"
+      gap={2}
       data-tauri-drag-region=""
     >
-      <Grid templateColumns="auto minmax(0, 1fr) auto" w="100%" alignItems="center" data-tauri-drag-region="">
-        <Box justifySelf="start" display="flex" alignItems="center" data-tauri-drag-region="">
-          {/* wordmark PNG 上下各有约34%透明留白(字形仅占30%高度),
-              用固定高度容器 + 负 margin 裁剪到字形本身,栏高保持紧凑。 */}
-          <Box h="18px" overflow="hidden" display="flex" flexShrink={0} data-tauri-drag-region="">
-            <img
-              src={isDark ? "/wordmark-white.png" : "/wordmark-black.png"}
-              alt="OpenMD"
-              draggable={false}
-              data-tauri-drag-region=""
-              style={{
-                height: "59px",
-                width: "auto",
-                marginTop: "-20px",
-                mixBlendMode: isDark ? "screen" : "multiply",
-                userSelect: "none",
-              }}
-            />
-          </Box>
+      {/* 左侧固定簇:Logo 与 打开/编辑/保存 三键,间隔 4px。 */}
+      <HStack gap={1} alignItems="center" flexShrink={0} data-tauri-drag-region="">
+        {/* wordmark PNG 上下各有约34%透明留白(字形仅占30%高度),
+            用固定高度容器 + 负 margin 裁剪到字形本身,栏高保持紧凑。 */}
+        <Box h="18px" overflow="hidden" display="flex" flexShrink={0} data-tauri-drag-region="">
+          <img
+            src={isDark ? "/wordmark-white.png" : "/wordmark-black.png"}
+            alt="OpenMD"
+            draggable={false}
+            data-tauri-drag-region=""
+            style={{
+              height: "59px",
+              width: "auto",
+              marginTop: "-20px",
+              mixBlendMode: isDark ? "screen" : "multiply",
+              userSelect: "none",
+            }}
+          />
         </Box>
 
-        <HStack gap={1} justifySelf="center" overflow="hidden" maxW="100%" data-tauri-drag-region="">
-          {/* 编辑/保存:从正文区移到顶栏「打开」左侧,作用于当前文档。 */}
-          {canEdit && (
-            <>
-              <IconButton
-                aria-label="切换编辑模式 (Ctrl+E)"
-                title="编辑模式 (Ctrl+E)"
-                variant="ghost"
-                size={compact ? "xs" : "sm"}
-                bg={editMode ? "fg" : "transparent"}
-                color={editMode ? "bg" : "fg"}
-                _hover={{ bg: editMode ? "fg.muted" : "bg.subtle" }}
-                onClick={toggleEditMode}
-              >
-                <Pencil size={14} />
-              </IconButton>
-              <IconButton
-                aria-label="保存 (Ctrl+S)"
-                title="保存 (Ctrl+S)"
-                variant="ghost"
-                size={compact ? "xs" : "sm"}
-                disabled={!dirty}
-                onClick={() => activeTab && void saveTab(activeTab.id)}
-              >
-                <Save size={14} />
-              </IconButton>
-            </>
-          )}
-          <Menu.Root
-            open={openMenu}
-            onOpenChange={(e) => setOpenMenu(e.open)}
-            positioning={{ placement: "bottom-start" }}
-          >
-            <Menu.Trigger asChild>
-              {compact ? (
-                <IconButton
-                  aria-label="打开"
-                  title="打开"
-                  variant="ghost"
-                  size="xs"
-                  onPointerEnter={showOpenMenu}
-                  onPointerLeave={scheduleOpenMenuClose}
-                >
-                  <FolderOpen size={14} />
-                </IconButton>
-              ) : (
-                <Button
-                  aria-label="打开"
-                  title="打开"
-                  variant="ghost"
-                  size="sm"
-                  gap={1.5}
-                  onPointerEnter={showOpenMenu}
-                  onPointerLeave={scheduleOpenMenuClose}
-                >
-                  <FolderOpen size={15} />
-                  打开
-                  <ChevronDown size={12} opacity={0.55} />
-                </Button>
-              )}
-            </Menu.Trigger>
-            <Portal>
-              <Menu.Positioner zIndex={1000}>
-                <Menu.Content
-                  minW="160px"
-                  bg="bg"
-                  borderWidth="1px"
-                  borderColor="border.subtle"
-                  borderRadius="10px"
-                  boxShadow="md"
-                  overflow="hidden"
-                  p={1}
-                  onPointerEnter={showOpenMenu}
-                  onPointerLeave={scheduleOpenMenuClose}
-                >
-                  <Menu.Item
-                    value="open-file"
-                    display="flex"
-                    alignItems="center"
-                    gap={2}
-                    fontSize="sm"
-                    px={2}
-                    py={1.5}
-                    borderRadius="6px"
-                    cursor="pointer"
-                    onClick={() => void handleOpen()}
-                  >
-                    <FileText size={14} />
-                    打开文件
-                  </Menu.Item>
-                  <Menu.Item
-                    value="open-folder"
-                    display="flex"
-                    alignItems="center"
-                    gap={2}
-                    fontSize="sm"
-                    px={2}
-                    py={1.5}
-                    borderRadius="6px"
-                    cursor="pointer"
-                    onClick={() => void handleWorkspace()}
-                  >
-                    <FolderTree size={14} />
-                    打开文件夹
-                  </Menu.Item>
-                </Menu.Content>
-              </Menu.Positioner>
-            </Portal>
-          </Menu.Root>
-
-          {compact ? (
+        {/* 打开:下拉菜单(打开文件 / 打开文件夹),只留图标不配文字。 */}
+        <Menu.Root
+          open={openMenu}
+          onOpenChange={(e) => setOpenMenu(e.open)}
+          positioning={{ placement: "bottom-start" }}
+        >
+          <Menu.Trigger asChild>
             <IconButton
-              aria-label="目录栏"
-              title="目录栏 (Ctrl+B)"
-              variant={tocShown ? "subtle" : "ghost"}
-              size="xs"
-              onClick={handleTocButton}
+              aria-label="打开"
+              title="打开"
+              variant="ghost"
+              size={compact ? "xs" : "sm"}
+              gap={1}
+              onPointerEnter={showOpenMenu}
+              onPointerLeave={scheduleOpenMenuClose}
             >
-              <PanelLeft size={14} />
+              <FolderOpen size={14} />
+              <ChevronDown size={12} opacity={0.55} />
             </IconButton>
-          ) : (
-            <Button
-              aria-label="目录栏"
-              title="目录栏 (Ctrl+B)"
-              variant={tocShown ? "subtle" : "ghost"}
-              size="sm"
-              gap={1.5}
-              onClick={handleTocButton}
-            >
-              <PanelLeft size={15} />
-              目录
-            </Button>
-          )}
-
-          {/* 边距与字号:同一套悬停式滑条控件,面板内容各自不同。 */}
-          <TitleBarSliderControl
-            icon={StretchHorizontal}
-            label="边距"
-            title="调整内容左右边距"
-            compact={compact}
-          >
-            <HStack justify="space-between" mb={2}>
-              <Text fontSize="xs" color="fg.muted">
-                内容边距
-              </Text>
-              <Text fontSize="xs" color="fg.muted" fontVariantNumeric="tabular-nums">
-                {contentPadding}px
-              </Text>
-            </HStack>
-            <Slider.Root
-              min={0}
-              max={MAX_CONTENT_PADDING}
-              step={4}
-              size="sm"
-              value={[contentPadding]}
-              onValueChange={(e) => setContentPadding(e.value[0])}
-            >
-              <Slider.Control>
-                <Slider.Track>
-                  <Slider.Range />
-                </Slider.Track>
-                <Slider.Thumbs />
-              </Slider.Control>
-            </Slider.Root>
-            <HStack gap={1} mt={2}>
-              {(
-                [
-                  { v: 0, label: "窄" },
-                  { v: 200, label: "适中" },
-                  { v: 400, label: "宽" },
-                ] as const
-              ).map((opt) => (
-                <Button
-                  key={opt.v}
-                  size="xs"
-                  flex={1}
-                  variant={contentPadding === opt.v ? "subtle" : "ghost"}
-                  onClick={() => setContentPadding(opt.v)}
+          </Menu.Trigger>
+          <Portal>
+            <Menu.Positioner zIndex={1000}>
+              <Menu.Content
+                minW="160px"
+                bg="bg"
+                borderWidth="1px"
+                borderColor="border.subtle"
+                borderRadius="10px"
+                boxShadow="md"
+                overflow="hidden"
+                p={1}
+                onPointerEnter={showOpenMenu}
+                onPointerLeave={scheduleOpenMenuClose}
+              >
+                <Menu.Item
+                  value="open-file"
+                  display="flex"
+                  alignItems="center"
+                  gap={2}
+                  fontSize="sm"
+                  px={2}
+                  py={1.5}
+                  borderRadius="6px"
+                  cursor="pointer"
+                  onClick={() => void handleOpen()}
                 >
-                  {opt.label}
-                </Button>
-              ))}
-            </HStack>
-          </TitleBarSliderControl>
+                  <FileText size={14} />
+                  打开文件
+                </Menu.Item>
+                <Menu.Item
+                  value="open-folder"
+                  display="flex"
+                  alignItems="center"
+                  gap={2}
+                  fontSize="sm"
+                  px={2}
+                  py={1.5}
+                  borderRadius="6px"
+                  cursor="pointer"
+                  onClick={() => void handleWorkspace()}
+                >
+                  <FolderTree size={14} />
+                  打开文件夹
+                </Menu.Item>
+              </Menu.Content>
+            </Menu.Positioner>
+          </Portal>
+        </Menu.Root>
 
-          <TitleBarSliderControl
-            icon={Type}
-            label="字号"
-            title="调整正文字号 (Ctrl+- / Ctrl+=)"
-            compact={compact}
-          >
-            <HStack justify="space-between" mb={2}>
-              <Text fontSize="xs" color="fg.muted">
-                正文字号
-              </Text>
-              <Text fontSize="xs" color="fg.muted" fontVariantNumeric="tabular-nums">
-                {fontSize}px
-              </Text>
-            </HStack>
-            <Slider.Root
-              min={MIN_FONT_SIZE}
-              max={MAX_FONT_SIZE}
-              step={1}
-              size="sm"
-              value={[fontSize]}
-              onValueChange={(e) => setFontSize(e.value[0])}
+        {/* 编辑/保存作用于当前文档。 */}
+        {canEdit && (
+          <>
+            <IconButton
+              aria-label="切换编辑模式 (Ctrl+E)"
+              title="编辑模式 (Ctrl+E)"
+              variant="ghost"
+              size={compact ? "xs" : "sm"}
+              bg={editMode ? "fg" : "transparent"}
+              color={editMode ? "bg" : "fg"}
+              _hover={{ bg: editMode ? "fg.muted" : "bg.subtle" }}
+              onClick={toggleEditMode}
             >
-              <Slider.Control>
-                <Slider.Track>
-                  <Slider.Range />
-                </Slider.Track>
-                <Slider.Thumbs />
-              </Slider.Control>
-            </Slider.Root>
-          </TitleBarSliderControl>
-        </HStack>
+              <Pencil size={14} />
+            </IconButton>
+            <IconButton
+              aria-label="保存 (Ctrl+S)"
+              title="保存 (Ctrl+S)"
+              variant="ghost"
+              size={compact ? "xs" : "sm"}
+              disabled={!dirty}
+              onClick={() => activeTab && void saveTab(activeTab.id)}
+            >
+              <Save size={14} />
+            </IconButton>
+          </>
+        )}
+      </HStack>
 
-        <Box justifySelf="end" display="flex" alignItems="center" data-tauri-drag-region="">
-          <WindowControls />
-        </Box>
-      </Grid>
+      {/* 标签栏:与顶栏同行,占中间剩余宽度。 */}
+      <TabBar />
+
+      {/* 右侧功能组与窗口控制。 */}
+      <HStack gap={1} alignItems="center" flexShrink={0} data-tauri-drag-region="">
+        {compact ? (
+          <IconButton
+            aria-label="目录栏"
+            title="目录栏 (Ctrl+B)"
+            variant={tocOpen ? "subtle" : "ghost"}
+            size="xs"
+            onClick={toggleToc}
+          >
+            <PanelRight size={14} />
+          </IconButton>
+        ) : (
+          <Button
+            aria-label="目录栏"
+            title="目录栏 (Ctrl+B)"
+            variant={tocOpen ? "subtle" : "ghost"}
+            size="sm"
+            gap={1.5}
+            onClick={toggleToc}
+          >
+            <PanelRight size={15} />
+            目录
+          </Button>
+        )}
+
+        {/* 边距与字号:同一套悬停式滑条控件,面板内容各自不同。 */}
+        <TitleBarSliderControl
+          icon={StretchHorizontal}
+          label="边距"
+          title="调整内容左右边距"
+          compact={compact}
+        >
+          <HStack justify="space-between" mb={2}>
+            <Text fontSize="xs" color="fg.muted">
+              内容边距
+            </Text>
+            <Text fontSize="xs" color="fg.muted" fontVariantNumeric="tabular-nums">
+              {contentPadding}px
+            </Text>
+          </HStack>
+          <Slider.Root
+            min={0}
+            max={MAX_CONTENT_PADDING}
+            step={4}
+            size="sm"
+            value={[contentPadding]}
+            onValueChange={(e) => setContentPadding(e.value[0])}
+          >
+            <Slider.Control>
+              <Slider.Track>
+                <Slider.Range />
+              </Slider.Track>
+              <Slider.Thumbs />
+            </Slider.Control>
+          </Slider.Root>
+          <HStack gap={1} mt={2}>
+            {(
+              [
+                { v: 0, label: "窄" },
+                { v: 200, label: "适中" },
+                { v: 400, label: "宽" },
+              ] as const
+            ).map((opt) => (
+              <Button
+                key={opt.v}
+                size="xs"
+                flex={1}
+                variant={contentPadding === opt.v ? "subtle" : "ghost"}
+                onClick={() => setContentPadding(opt.v)}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </HStack>
+        </TitleBarSliderControl>
+
+        <TitleBarSliderControl
+          icon={Type}
+          label="字号"
+          title="调整正文字号 (Ctrl+- / Ctrl+=)"
+          compact={compact}
+        >
+          <HStack justify="space-between" mb={2}>
+            <Text fontSize="xs" color="fg.muted">
+              正文字号
+            </Text>
+            <Text fontSize="xs" color="fg.muted" fontVariantNumeric="tabular-nums">
+              {fontSize}px
+            </Text>
+          </HStack>
+          <Slider.Root
+            min={MIN_FONT_SIZE}
+            max={MAX_FONT_SIZE}
+            step={1}
+            size="sm"
+            value={[fontSize]}
+            onValueChange={(e) => setFontSize(e.value[0])}
+          >
+            <Slider.Control>
+              <Slider.Track>
+                <Slider.Range />
+              </Slider.Track>
+              <Slider.Thumbs />
+            </Slider.Control>
+          </Slider.Root>
+        </TitleBarSliderControl>
+
+        <WindowControls />
+      </HStack>
     </Box>
   );
 }

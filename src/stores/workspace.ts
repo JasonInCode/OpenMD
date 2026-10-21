@@ -6,7 +6,6 @@ import {
   watchWorkspace,
   type WorkspaceEntry,
 } from "../tauri/api";
-import { useSettings } from "./settings";
 
 /** True when running inside the Tauri webview (false in a plain browser). */
 const IN_TAURI = "__TAURI_INTERNALS__" in window;
@@ -107,8 +106,6 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
         watchWorkspace(path).catch((e) => console.error("watch_workspace failed:", e));
       }
     }
-    // 用户此刻就是在挑文件夹:侧栏切到「文件」页,并在打开文档后显示这棵树。
-    useSettings.getState().setSidebarTab("files");
     await get().ensureLoaded(path);
     // 文档清单既当计数,又用来挑"打开文件夹后立刻预览"的那篇。
     const docs = await listWorkspaceDocs(path);

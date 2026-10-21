@@ -5,8 +5,8 @@ import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { Flex, Box } from "@chakra-ui/react";
 import { TitleBar } from "./components/TitleBar";
-import { TabBar } from "./components/TabBar";
-import { Sidebar } from "./components/Sidebar";
+import { WorkspaceSidebar } from "./components/WorkspaceSidebar";
+import { TocSidebar } from "./components/TocSidebar";
 import { MarkdownView } from "./components/MarkdownView";
 import { EmptyState } from "./components/EmptyState";
 import { StatusBar } from "./components/StatusBar";
@@ -355,7 +355,6 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const showSidebar = tocOpen && activeTab !== undefined;
   // 一个标签都没有 = 首页:整页留白,只显示居中文字 Logo。
   const isHome = tabs.length === 0;
   // 启动排水未完成前只渲染空白底色(正在打开关联文件),避免首页闪现。
@@ -379,35 +378,41 @@ export default function App() {
       ) : (
         <Flex direction="column" flex={1} minH={0} {...viewInAnimation}>
           <TitleBar onOpenError={setOpenError} />
-          <TabBar />
           <Flex flex={1} minH={0} position="relative">
-            {activeTab && <Sidebar open={showSidebar} />}
-            {activeTab && <MarkdownView key={activeTab.id} tab={activeTab} />}
-            {/* 提示条落在内容区顶部居中(不压 Tab 栏):data-placement=bottom 让
+            {/* 左侧工作区栏:只有打开了文件夹才出现。 */}
+            {activeTab && <WorkspaceSidebar />}
+            {/* 正文:提示条落在内容区顶部居中(不压顶栏):data-placement=bottom 让
                 slide-fade-in/out 表现为「自上滑入 / 向上滑出」。 */}
-            {topNotice && (
-              <Flex
-                data-placement="bottom"
-                position="absolute"
-                top="12px"
-                left="50%"
-                transform="translateX(-50%)"
-                animationStyle={topNotice.phase === "open" ? "slide-fade-in" : "slide-fade-out"}
-                animationDuration={topNotice.phase === "open" ? "fast" : "faster"}
-                animationFillMode="both"
-                bg="fg"
-                color="bg"
-                px={4}
-                py={2}
-                borderRadius="md"
-                fontSize="xs"
-                boxShadow="lg"
-                zIndex={100}
-                pointerEvents="none"
-              >
-                {topNotice.text}
+            {activeTab && (
+              <Flex flex={1} minW={0} minH={0} position="relative">
+                <MarkdownView key={activeTab.id} tab={activeTab} />
+                {topNotice && (
+                  <Flex
+                    data-placement="bottom"
+                    position="absolute"
+                    top="12px"
+                    left="50%"
+                    transform="translateX(-50%)"
+                    animationStyle={topNotice.phase === "open" ? "slide-fade-in" : "slide-fade-out"}
+                    animationDuration={topNotice.phase === "open" ? "fast" : "faster"}
+                    animationFillMode="both"
+                    bg="fg"
+                    color="bg"
+                    px={4}
+                    py={2}
+                    borderRadius="md"
+                    fontSize="xs"
+                    boxShadow="lg"
+                    zIndex={100}
+                    pointerEvents="none"
+                  >
+                    {topNotice.text}
+                  </Flex>
+                )}
               </Flex>
             )}
+            {/* 右侧目录栏:顶栏「目录」按钮控制显隐。 */}
+            {activeTab && <TocSidebar open={tocOpen} />}
           </Flex>
           <StatusBar />
         </Flex>

@@ -31,20 +31,24 @@ export function TabBar() {
   const { tabs, activeId, setActive, requestCloseTab } = useTabs();
 
   return (
+    // 空白处留作窗口拖拽区;标签带 tabindex,点击与拖拽不会被拖窗区抢走。
     <Box
-      as="nav"
       display="flex"
-      alignItems="stretch"
-      flexShrink={0}
+      alignItems="center"
+      flex={1}
+      minW={0}
+      data-tauri-drag-region=""
     >
       <HStack
         gap={0}
         px={2}
-        pt={1}
         flex={1}
         minW={0}
         position="relative"
+        role="tablist"
+        aria-label="已打开的文档"
         data-tab-strip=""
+        data-tauri-drag-region=""
         overflowX="auto"
         overflowY="hidden"
         css={{
@@ -57,8 +61,17 @@ export function TabBar() {
             <Box
               key={tab.id}
               data-tab-id={tab.id}
-              as="button"
+              // 标签是 div 而非 button:关闭按钮是另一个 button,button 套 button 是非法 HTML。
+              // 用 role=tab 保留可聚焦与选中语义,键盘的 Enter/Space 自行接管。
+              role="tab"
+              aria-selected={active}
+              tabIndex={0}
               onClick={() => setActive(tab.id)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter" && e.key !== " ") return;
+                e.preventDefault();
+                setActive(tab.id);
+              }}
               // 阻止 WebView2 中键自动滚动,否则 auxclick 不触发、中键关闭失效。
               onMouseDown={(e) => {
                 if (e.button === 1) e.preventDefault();

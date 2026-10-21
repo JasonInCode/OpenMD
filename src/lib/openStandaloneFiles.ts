@@ -13,7 +13,7 @@ export async function openStandaloneFiles(paths: readonly string[]): Promise<voi
   if (files.length === 0) return;
 
   const settings = useSettings.getState();
-  settings.setSidebarTab("toc");
+  // 单篇文档没有工作区树可看,目录栏是唯一的导航,打开时确保它在。
   if (!settings.tocOpen) settings.toggleToc();
 
   for (const path of files) {
