@@ -313,7 +313,7 @@ export const useTabs = create<TabsState>((set, get) => ({
 
   closeTab: (id) => {
     const empty = detach(set, get, id);
-    // 拆分窗口标签关光 = 这扇窗口的任务完成了,跟着关掉。
+    // 非主窗口是为某篇文档而开的,文档关光 = 这扇窗口的任务完成了,跟着关掉。
     if (empty && !IS_MAIN_WINDOW) closeWindow();
   },
 

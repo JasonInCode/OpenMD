@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { listen } from "@tauri-apps/api/event";
-import { invoke } from "@tauri-apps/api/core";
 import { Flex, Box } from "@chakra-ui/react";
 import { TitleBar } from "./components/TitleBar";
 import { WorkspaceSidebar } from "./components/WorkspaceSidebar";
@@ -12,7 +11,6 @@ import { EmptyState } from "./components/EmptyState";
 import { StatusBar } from "./components/StatusBar";
 import { TabGhost } from "./components/TabGhost";
 import { AppBackground } from "./components/AppBackground";
-import { CloseDialog } from "./components/CloseDialog";
 import { UnsavedDialog } from "./components/UnsavedDialog";
 import { SettingsModal } from "./components/SettingsModal";
 import { useUI } from "./stores/ui";
@@ -20,10 +18,10 @@ import { useTabs } from "./stores/tabs";
 import { DEFAULT_FONT_SIZE, useSettings } from "./stores/settings";
 import { useWorkspace } from "./stores/workspace";
 import { openStandaloneFiles } from "./lib/openStandaloneFiles";
-import { IS_MAIN_WINDOW, closeWindow } from "./lib/window";
+import { IS_MAIN_WINDOW, WINDOW_LABEL, closeWindow } from "./lib/window";
 import { measureInsertion } from "./lib/tabDrop";
 import { watchChipDrag } from "./lib/tabDrag";
-import { openFolderAsWorkspace } from "./lib/openFolderAsWorkspace";
+import { openFolderAsWorkspace, openFolderInNewWindow } from "./lib/openFolder";
 import { viewInAnimation } from "./theme/theme";
 import {
   getOpenedPaths,
@@ -38,6 +36,7 @@ import {
   onWorkspaceChanged,
   openFileDialog,
   openFolderDialog,
+  takePendingFolder,
   takePendingTab,
 } from "./tauri/api";
 
@@ -63,7 +62,9 @@ async function drainOpenedPaths(): Promise<void> {
   if (buffered.files.length === 0 && buffered.folders.length === 0) return;
   void logAssoc(`drained ${buffered.files.length} files, ${buffered.folders.length} folders`);
   await openStandaloneFiles(buffered.files);
-  for (const folder of buffered.folders) await openFolderAsWorkspace(folder);
+  for (const folder of buffered.folders) {
+    await openFolderInNewWindow(folder).catch((e) => console.error("打开文件夹失败:", e));
+  }
 }
 
 export default function App() {
@@ -74,7 +75,6 @@ export default function App() {
   const settingsOpen = useUI((s) => s.settingsOpen);
   const setSettingsOpen = useUI((s) => s.setSettingsOpen);
   const [openError, setOpenError] = useState<string | null>(null);
-  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   // 顶部提示条(编辑模式切换等):3 秒自动消失。
   // phase 用于播退场动画(closing → 动画播完再卸载)。
   const [topNotice, setTopNotice] = useState<{ text: string; phase: "open" | "closing" } | null>(null);
@@ -84,29 +84,22 @@ export default function App() {
 
   const activeTab = tabs.find((t) => t.id === activeId) ?? tabs[0];
 
-  // 托盘事件:点 X 关闭被 Rust 拦截后的行为(关闭询问 / 收进托盘 / 直接退出)。
+  // 关闭请求(点 X / Alt+F4):先把未保存修改逐个问清楚,用户取消就留着。
+  // 监听按窗口 label 限定:Rust 侧只投给正在关的那扇窗口。
   useEffect(() => {
     if (!inTauri) return;
-    const unlistenClose = listen("close-requested", () => {
-      // 拆分出来的窗口点 X 就是关掉它:先把未保存修改逐个问清楚,用户取消就留着。
-      if (!IS_MAIN_WINDOW) {
+    const unlistenClose = listen(
+      "close-requested",
+      () => {
         void useTabs
           .getState()
           .confirmCloseAll()
           .then((ok) => {
             if (ok) closeWindow();
           });
-        return;
-      }
-      const action = useSettings.getState().closeAction;
-      if (action === "tray") {
-        void invoke("hide_to_tray").catch(() => {});
-      } else if (action === "exit") {
-        void invoke("quit_app").catch(() => {});
-      } else {
-        setCloseDialogOpen(true);
-      }
-    });
+      },
+      { target: WINDOW_LABEL },
+    );
     return () => {
       unlistenClose.then((fn) => fn()).catch(() => {});
     };
@@ -154,6 +147,11 @@ export default function App() {
           useTabs.getState().insertTab(pending.tab);
           setGhost(pending.ghost);
         }
+        // 打开文件夹时新建的窗口:文件夹在建窗时就分配好了,开成工作区。
+        const folder = await takePendingFolder().catch(() => null);
+        if (folder) {
+          await openFolderAsWorkspace(folder).catch((e) => console.error("打开文件夹失败:", e));
+        }
         // 系统"打开方式"的缓冲只有主窗口该排空:新窗口排空了会把待打开的文件抢走。
         if (IS_MAIN_WINDOW) await drainOpenedPaths();
       }
@@ -185,7 +183,7 @@ export default function App() {
     const unlistenOpened = onOpenedFiles(() => {
       void drainOpenedPaths();
     });
-    // 资源管理器里右键文件夹「Open with OpenMD」:打开为工作区。
+    // 资源管理器里右键文件夹「Open with OpenMD」:新开一扇窗口打开它。
     const unlistenFolders = onOpenedFolders(() => {
       void drainOpenedPaths();
     });
@@ -223,10 +221,10 @@ export default function App() {
               continue;
             }
             void isDirectory(p)
-              .then((isDir) => {
-                if (isDir) void useWorkspace.getState().openFolder(p);
+              .then(async (isDir) => {
+                if (isDir) await openFolderInNewWindow(p);
               })
-              .catch(() => {});
+              .catch((e) => console.error("打开文件夹失败:", e));
           }
           if (markdownPaths.length > 0) void openStandaloneFiles(markdownPaths);
         }
@@ -304,10 +302,10 @@ export default function App() {
       if (key === "o") {
         e.preventDefault();
         if (e.shiftKey) {
-          // Ctrl+Shift+O:选择文件夹打开为工作区
+          // Ctrl+Shift+O:选择文件夹,在独立的新窗口里打开
           openFolderDialog()
-            .then((p) => {
-              if (p) void useWorkspace.getState().openFolder(p);
+            .then(async (p) => {
+              if (p) await openFolderInNewWindow(p);
             })
             .catch((err) => setOpenError(String(err)));
         } else {
@@ -374,7 +372,7 @@ export default function App() {
       ) : ghost ? (
         <TabGhost />
       ) : isHome ? (
-        <EmptyState />
+        <EmptyState onOpenError={setOpenError} />
       ) : (
         <Flex direction="column" flex={1} minH={0} {...viewInAnimation}>
           <TitleBar onOpenError={setOpenError} />
@@ -437,7 +435,6 @@ export default function App() {
           {`${openError} — 点击关闭`}
         </Flex>
       )}
-      <CloseDialog open={closeDialogOpen} onClose={() => setCloseDialogOpen(false)} />
       <UnsavedDialog />
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </Flex>

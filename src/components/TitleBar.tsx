@@ -28,7 +28,7 @@ import {
   useSettings,
 } from "../stores/settings";
 import { openFolderDialog, openFileDialog } from "../tauri/api";
-import { openFolderAsWorkspace } from "../lib/openFolderAsWorkspace";
+import { openFolderInNewWindow } from "../lib/openFolder";
 import { openStandaloneFiles } from "../lib/openStandaloneFiles";
 import { isDirty, useTabs } from "../stores/tabs";
 import { TabBar } from "./TabBar";
@@ -107,7 +107,7 @@ export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void 
       return null;
     });
     if (!picked) return;
-    await openFolderAsWorkspace(picked);
+    await openFolderInNewWindow(picked).catch((e) => onOpenError?.(String(e)));
   };
 
   // 顶栏一行三段:左侧固定簇(Logo 与 打开/编辑/保存,彼此 4px)、中间标签栏、

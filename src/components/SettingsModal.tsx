@@ -91,8 +91,6 @@ function GeneralSection() {
   // 文件夹右键菜单:注册表写入能力随 Windows 权限而定
   const [folderVerb, setFolderVerb] = useState<boolean | null>(null);
   const [folderVerbBusy, setFolderVerbBusy] = useState(false);
-  // 关闭窗口行为(与关闭询问对话框的"不再提醒"共用一个设置)
-  const { closeAction, setCloseAction } = useSettings();
 
   useEffect(() => {
     isMdAssociated()
@@ -137,36 +135,6 @@ function GeneralSection() {
 
   return (
     <VStack align="stretch" gap={0}>
-      <Flex
-        justify="space-between"
-        align="center"
-        gap={6}
-        py={3}
-        borderBottomWidth="1px"
-        borderColor="border.subtle"
-      >
-        <Text fontSize="sm" color="fg.muted" flexShrink={0}>
-          关闭窗口
-        </Text>
-        <HStack gap={1}>
-          {(
-            [
-              { v: "ask", label: "每次询问" },
-              { v: "tray", label: "隐藏到托盘" },
-              { v: "exit", label: "直接退出" },
-            ] as const
-          ).map((opt) => (
-            <Button
-              key={opt.v}
-              size="xs"
-              variant={closeAction === opt.v ? "subtle" : "ghost"}
-              onClick={() => setCloseAction(opt.v)}
-            >
-              {opt.label}
-            </Button>
-          ))}
-        </HStack>
-      </Flex>
       {assoc !== null && (
         <ToggleRow
           label="文件关联"

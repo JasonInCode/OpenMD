@@ -6,7 +6,7 @@ import { useRecent, type RecentFile } from "../stores/recent";
 import { useSettings } from "../stores/settings";
 import { useUI } from "../stores/ui";
 import { openFolderDialog, openFileDialog } from "../tauri/api";
-import { openFolderAsWorkspace } from "../lib/openFolderAsWorkspace";
+import { openFolderInNewWindow } from "../lib/openFolder";
 import { openStandaloneFiles } from "../lib/openStandaloneFiles";
 import { viewInAnimation } from "../theme/theme";
 import { FloatingScrollbar } from "./FloatingScrollbar";
@@ -26,7 +26,7 @@ function dirOf(path: string): string {
  * 暗色主题用白色字标,亮色用黑色字标;mix-blend-mode 让黑/白底图
  * 在任何背景下都只剩字形本身。Ctrl+O 或拖 .md 进窗口同样可以打开。
  */
-export function EmptyState() {
+export function EmptyState({ onOpenError }: { onOpenError?: (msg: string) => void }) {
   const { resolvedTheme } = useTheme();
   const recents = useRecent((s) => s.files);
   const removeRecent = useRecent((s) => s.remove);
@@ -54,20 +54,19 @@ export function EmptyState() {
     try {
       const paths = await openFileDialog();
       await openStandaloneFiles(paths ?? []);
-    } catch {
-      /* 用户取消或浏览器环境 */
+    } catch (e) {
+      onOpenError?.(String(e));
     }
   };
 
-  // 打开文件夹为工作区:打开后直接进预览页 —— 有文档就打开第一篇,用户不必再
-  // 点一次侧栏;完全没有文档时停在 Logo 首页(侧栏树会提示"此文件夹中没有文档")。
-  // 取消对话框则什么都不做。
+  // 打开文件夹:新开一扇独立窗口,文件夹在那里成为工作区 ——
+  // 当前窗口的文档不受打扰。取消对话框则什么都不做。
   const handleOpenFolder = async () => {
     try {
       const picked = await openFolderDialog();
-      if (picked) await openFolderAsWorkspace(picked);
-    } catch {
-      /* 用户取消或浏览器环境 */
+      if (picked) await openFolderInNewWindow(picked);
+    } catch (e) {
+      onOpenError?.(String(e));
     }
   };
 

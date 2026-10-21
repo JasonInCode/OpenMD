@@ -1,17 +1,19 @@
 mod commands;
 mod editors;
 mod file_assoc;
+mod folder_window;
 mod stats;
 mod tab_drag;
-mod tray;
 mod watcher;
+mod window;
 
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
+use tauri::{AppHandle, Emitter, Manager};
 
 /// 主窗口的 label。系统级入口(文件关联打开、第二实例转发)统一投给它:
-/// 其余窗口是拖标签拆出来的,不该被"双击 .md"这类全局动作劫持。
+/// 其余窗口是拖标签拆出来的或打开文件夹新建的,不该被"双击 .md"这类全局
+/// 动作劫持。
 const MAIN_WINDOW: &str = "main";
 /// 由 OS 投递的待打开路径:文件关联与文件夹右键菜单都把路径作为裸参数传进来。
 /// 这类路径可能早于 webview 就绪到达,因此先缓冲,等前端启动时一次性取走。
@@ -95,14 +97,40 @@ fn push_opened_paths(app: &AppHandle, files: Vec<String>, folders: Vec<String>) 
     }
 }
 
-/// 敲主窗口的门。事件不带路径:Tauri 在没有 JS 监听器的 webview 上会静默
+/// 敲窗口的门。事件不带路径:Tauri 在没有 JS 监听器的 webview 上会静默
 /// 跳过投递(仍返回 Ok),所以路径只留在 [`OpenedPaths`] 队列里,前端每次被
 /// 敲门都去 [`get_opened_paths`] 取。丢失一次敲门最多晚一个敲门周期。
-/// 只投主窗口:其余窗口是拖标签拆出来的,不该被"双击 .md"这类全局动作劫持。
 fn emit_opened(app: &AppHandle, event: &str) {
-    match app.emit_to(MAIN_WINDOW, event, ()) {
+    let result = match front_window(app) {
+        Some(window) => app.emit_to(window.label(), event, ()),
+        None => app.emit(event, ()),
+    };
+    match result {
         Ok(_) => debug_log(app, &format!("emitted {event} OK")),
         Err(e) => debug_log(app, &format!("emitted {event} FAILED: {e}")),
+    }
+}
+
+/// 落到前面的窗口:优先主窗口;主窗口已关而应用还活着时,取当前聚焦的那扇,
+/// 再退而取任意一扇还开着的 —— 不然转发的文件没人接,用户根本看不到。
+fn front_window(app: &AppHandle) -> Option<tauri::WebviewWindow> {
+    if let Some(window) = app.get_webview_window(MAIN_WINDOW) {
+        return Some(window);
+    }
+    let windows = app.webview_windows();
+    windows
+        .values()
+        .find(|w| w.is_focused().unwrap_or(false))
+        .or_else(|| windows.values().next())
+        .cloned()
+}
+
+/// 把应用显示到前面(第二实例转发文件时使用)。
+fn show_main_window(app: &AppHandle) {
+    if let Some(window) = front_window(app) {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
     }
 }
 
@@ -146,25 +174,14 @@ fn collect_open_args<I: Iterator<Item = String>>(args: I) -> (Vec<String>, Vec<S
     (files, folders)
 }
 
-/// 隐藏窗口到系统托盘(前端关闭询问对话框选择"隐藏到托盘"时调用)。
-#[tauri::command]
-fn hide_to_tray(window: WebviewWindow) {
-    let _ = window.hide();
-}
-
-/// 真正退出程序(托盘菜单"退出"与前端关闭询问对话框选择"退出"共用)。
-#[tauri::command]
-fn quit_app(app: AppHandle) {
-    app.exit(0);
-}
-
 pub fn run() {
     let (initial_files, initial_folders) = collect_open_args(std::env::args());
 
     tauri::Builder::default()
         // 窗口状态插件默认会恢复上次保存的 decorations 标记,导致
         // tauri.conf.json 里的 decorations:false 失效;排除该字段。
-        // 同时排除 VISIBLE:从托盘隐藏后退出,下次启动不应保持隐藏。
+        // 同时排除 VISIBLE:窗口以 visible:false 创建,由 setup 显式 show(),
+        // 免得先在屏幕中央闪一下再跳到上次位置。
         .plugin(
             tauri_plugin_window_state::Builder::default()
                 .with_state_flags(
@@ -184,14 +201,15 @@ pub fn run() {
             debug_log(app, &format!("single_instance argv: {argv:?}"));
             let (files, folders) = collect_open_args(argv.into_iter());
             push_opened_paths(app, files, folders);
-            // 若窗口在托盘里,第二实例唤起时顺便显示主窗口
-            tray::show_main_window(app);
+            // 第二实例唤起时顺便把主窗口显示到前面
+            show_main_window(app);
         }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .manage(watcher::WatcherState::default())
         .manage(tab_drag::TabDragState::default())
+        .manage(folder_window::FolderWindows::default())
         .manage(OpenedPaths {
             files: Mutex::new(initial_files),
             folders: Mutex::new(initial_folders),
@@ -215,8 +233,8 @@ pub fn run() {
             watcher::watch_workspace,
             watcher::unwatch_workspace,
             get_opened_paths,
-            hide_to_tray,
-            quit_app,
+            folder_window::open_folder_window,
+            folder_window::take_pending_folder,
             tab_drag::begin_tab_drag,
             tab_drag::end_tab_drag,
             tab_drag::take_pending_tabs,
@@ -234,25 +252,20 @@ pub fn run() {
                 watcher::release_window(window.app_handle(), window.label());
             }
             tauri::WindowEvent::CloseRequested { api, .. } => {
+                // 拦截关闭请求(点 X / Alt+F4):交给前端先逐个问未保存修改,
+                // 确认后前端 destroy() 本窗口 —— 再调 close() 会回到这里,自激。
+                // 主窗口关掉后应用继续运行(还有别的窗口开着时),最后一个窗口
+                // 关闭时 Tauri 自己结束进程。
                 api.prevent_close();
-                if window.label() != MAIN_WINDOW {
-                    // 拆分出来的窗口点 X 就是关掉它。前端先做未保存检查,确认后
-                    // 用 destroy() 真关 —— 再调 close() 会回到这里,自激。
-                    let _ = window.emit("close-requested", ());
-                } else {
-                    // 拦截所有关闭请求(点 X / Alt+F4):交给前端弹出询问对话框
-                    // (隐藏到托盘 还是 退出)。
-                    let _ = window.emit("close-requested", ());
-                }
+                // 只投给正在关的这扇窗口:窗口上的 emit 是广播,那样关掉任一
+                // 窗口会把别的窗口也一起关掉。
+                let _ = window.emit_to(window.label(), "close-requested", ());
             }
             _ => {}
         })
         .setup(|app| {
             // 首次启动上报统计(版本 + 操作系统,仅一次)
             stats::check_and_send_statistics(app);
-
-            // 系统托盘
-            tray::create_tray(app.handle())?;
 
             // 窗口以 visible:false 隐藏创建,先恢复上次的位置/尺寸再显示,
             // 避免出现"先在屏幕中央、再跳到上次位置"的闪烁。

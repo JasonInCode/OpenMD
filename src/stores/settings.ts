@@ -2,8 +2,6 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export type ViewMode = "preview" | "code";
-/** 关闭窗口行为:每次询问 / 隐藏到托盘 / 直接退出。 */
-export type CloseAction = "ask" | "tray" | "exit";
 
 /** 正文字号默认值(px)。 */
 export const DEFAULT_FONT_SIZE = 17;
@@ -40,8 +38,6 @@ interface SettingsState {
   viewMode: ViewMode;
   /** 编辑模式:代码视图出现可编辑覆盖层,预览视图 contentEditable。 */
   editMode: boolean;
-  /** 关闭窗口行为(勾选"不再提醒"后由关闭对话框写入)。 */
-  closeAction: CloseAction;
   setFontSize: (n: number) => void;
   toggleToc: () => void;
   setContentPadding: (n: number) => void;
@@ -49,7 +45,6 @@ interface SettingsState {
   setBackgroundBlur: (n: number) => void;
   setViewMode: (v: ViewMode) => void;
   toggleEditMode: () => void;
-  setCloseAction: (v: CloseAction) => void;
 }
 
 export const useSettings = create<SettingsState>()(
@@ -62,7 +57,6 @@ export const useSettings = create<SettingsState>()(
       backgroundBlur: DEFAULT_BACKGROUND_BLUR,
       viewMode: "preview",
       editMode: false,
-      closeAction: "ask",
       // 字号滑动过渡在 MarkdownView 的 font-size transition 中实现。
       setFontSize: (n) =>
         set({ fontSize: Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, n)) }),
@@ -76,8 +70,9 @@ export const useSettings = create<SettingsState>()(
         set({ backgroundBlur: Math.min(MAX_BACKGROUND_BLUR, Math.max(0, n)) }),
       setViewMode: (v) => set({ viewMode: v }),
       toggleEditMode: () => set((s) => ({ editMode: !s.editMode })),
-      setCloseAction: (v) => set({ closeAction: v }),
     }),
-    { name: "openmd-settings" },
+    {
+      name: "openmd-settings",
+    },
   ),
 );

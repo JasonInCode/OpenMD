@@ -6,12 +6,17 @@ import {
   watchWorkspace,
   type WorkspaceEntry,
 } from "../tauri/api";
+import { IS_MAIN_WINDOW } from "../lib/window";
 
 /** True when running inside the Tauri webview (false in a plain browser). */
 const IN_TAURI = "__TAURI_INTERNALS__" in window;
 
 const STORAGE_KEY = "openmd-workspace";
 
+/**
+ * 记住的「最近打开的文件夹」。文件夹在自己的窗口里打开,所以这份记忆是全局的:
+ * 哪个窗口打开了文件夹就写哪一份,主窗口启动时读回来。
+ */
 interface SavedWorkspace {
   root: string;
   expanded: string[];
@@ -178,9 +183,12 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   },
 }));
 
-// 跨启动记忆:启动即恢复上次工作区(应用仍停留在首页,打开任意文档后
-// 侧栏文件 Tab 立即有树)。浏览器预览环境无文件 IO,只恢复不加载。
-const saved = restore();
+// 跨启动记忆:主窗口启动即恢复上次打开的文件夹(应用仍停留在首页,打开任意
+// 文档后侧栏文件 Tab 立即有树)。其余窗口的内容都是显式分配的(打开文件夹时
+// 新建的窗口拿自己的文件夹,拖标签拆出来的窗口拿自己的标签),不恢复 ——
+// 否则会先把上一个文件夹的树挂上,再被自己的内容替换掉。
+// 浏览器预览环境无文件 IO,只恢复不加载。
+const saved = IS_MAIN_WINDOW ? restore() : null;
 if (saved) {
   const expanded = new Set([saved.root, ...saved.expanded]);
   useWorkspace.setState({ root: saved.root, expanded });

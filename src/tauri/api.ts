@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
+import { WINDOW_LABEL } from "../lib/window";
 
 export const MARKDOWN_EXTENSIONS = ["md", "markdown", "mdown", "mkd"];
 
@@ -113,33 +114,37 @@ export interface TabDropPayload {
 
 /** 别扇窗口拖过来的标签:按落点位置插进标签栏。 */
 export function onTabDrop(handler: (payload: TabDropPayload) => void) {
-  return listen<TabDropPayload>("tab-drop", (event) => handler(event.payload)).catch(
-    () => () => {},
-  );
+  return listen<TabDropPayload>("tab-drop", (event) => handler(event.payload), {
+    target: WINDOW_LABEL,
+  }).catch(() => () => {});
 }
 
 /** 别扇窗口的标签正悬在本窗口上,x 是光标在本窗口内的横坐标(CSS 像素)。 */
 export function onTabDragHover(handler: (payload: { x: number }) => void) {
-  return listen<{ x: number }>("tab-drag-hover", (event) => handler(event.payload)).catch(
-    () => () => {},
-  );
+  return listen<{ x: number }>("tab-drag-hover", (event) => handler(event.payload), {
+    target: WINDOW_LABEL,
+  }).catch(() => () => {});
 }
 
 /** 别扇窗口的标签离开了本窗口:撤掉插入线。 */
 export function onTabDragHoverEnd(handler: () => void) {
-  return listen("tab-drag-hover-end", () => handler()).catch(() => () => {});
+  return listen("tab-drag-hover-end", () => handler(), { target: WINDOW_LABEL }).catch(
+    () => () => {},
+  );
 }
 
 /** 芯片窗口落定:该把芯片换成完整界面了。 */
 export function onTabDragSettled(handler: () => void) {
-  return listen("tab-drag-settled", () => handler()).catch(() => () => {});
+  return listen("tab-drag-settled", () => handler(), { target: WINDOW_LABEL }).catch(
+    () => () => {},
+  );
 }
 
 export function onFileChanged(handler: (payload: FileChangedPayload) => void) {
   // 浏览器预览环境没有事件系统,降级为空监听。
-  return listen<FileChangedPayload>("file-changed", (event) => handler(event.payload)).catch(
-    () => () => {},
-  );
+  return listen<FileChangedPayload>("file-changed", (event) => handler(event.payload), {
+    target: WINDOW_LABEL,
+  }).catch(() => () => {});
 }
 
 /**
@@ -148,7 +153,7 @@ export function onFileChanged(handler: (payload: FileChangedPayload) => void) {
  * 可靠的,所以回调里必须去 `getOpenedPaths` 取。
  */
 export function onOpenedFiles(handler: () => void) {
-  return listen("opened-files", () => handler()).catch((e) => {
+  return listen("opened-files", () => handler(), { target: WINDOW_LABEL }).catch((e) => {
     void logAssoc(`listen opened-files FAILED: ${e}`);
     return () => {};
   });
@@ -156,7 +161,7 @@ export function onOpenedFiles(handler: () => void) {
 
 /** 文件夹右键菜单的敲门。与 `opened-files` 同理不带路径,路径同样只认队列。 */
 export function onOpenedFolders(handler: () => void) {
-  return listen("opened-folders", () => handler()).catch((e) => {
+  return listen("opened-folders", () => handler(), { target: WINDOW_LABEL }).catch((e) => {
     void logAssoc(`listen opened-folders FAILED: ${e}`);
     return () => {};
   });
@@ -194,6 +199,19 @@ export async function openFolderDialog(): Promise<string | null> {
 }
 
 // ---- 文件夹工作区 ----
+
+/**
+ * 新建一扇独立窗口打开文件夹:文件夹在窗口里成为工作区。
+ * 与「打开文件」不同,文件开在当前窗口,文件夹有自己的窗口。
+ */
+export async function openFolderWindow(path: string): Promise<void> {
+  await invoke("open_folder_window", { path });
+}
+
+/** 打开文件夹时新建的窗口启动时取走分配给自己的文件夹;其它窗口返回 null。 */
+export async function takePendingFolder(): Promise<string | null> {
+  return invoke("take_pending_folder");
+}
 
 export interface WorkspaceEntry {
   name: string;
@@ -258,8 +276,10 @@ export interface WorkspaceChangedPayload {
 }
 
 export function onWorkspaceChanged(handler: (payload: WorkspaceChangedPayload) => void) {
-  return listen<WorkspaceChangedPayload>("workspace-changed", (event) =>
-    handler(event.payload),
+  return listen<WorkspaceChangedPayload>(
+    "workspace-changed",
+    (event) => handler(event.payload),
+    { target: WINDOW_LABEL },
   ).catch(() => () => {});
 }
 

@@ -14,8 +14,7 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use tauri::{
-    AppHandle, Emitter, Manager, PhysicalPosition, PhysicalRect, PhysicalSize, WebviewUrl,
-    WebviewWindow, WebviewWindowBuilder,
+    AppHandle, Emitter, Manager, PhysicalPosition, PhysicalRect, PhysicalSize, WebviewWindow,
 };
 
 /// 跟手与落点高亮的刷新节奏。
@@ -461,17 +460,14 @@ fn open_window(
     scale: f64,
     chip: bool,
 ) -> Result<WebviewWindow, String> {
-    let window = WebviewWindowBuilder::new(app, label, WebviewUrl::App("index.html".into()))
-        .title("OpenMD")
-        .decorations(false)
+    let window = crate::window::app_window_builder(app, label, size.width as f64 / scale, size.height as f64 / scale)
         .focused(false)
         .always_on_top(chip)
         .resizable(!chip)
         .shadow(chip)
-        // 建窗时先给个逻辑尺寸,紧接着用物理尺寸校正,避免窗口先以默认尺寸闪一下。
-        .inner_size(size.width as f64 / scale, size.height as f64 / scale)
         .build()
         .map_err(|e| e.to_string())?;
+    // 建窗时先给个逻辑尺寸,紧接着用物理尺寸校正,避免窗口先以默认尺寸闪一下。
     let _ = window.set_size(size);
     let _ = window.set_position(position);
     Ok(window)
