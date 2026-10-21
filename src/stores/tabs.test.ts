@@ -4,6 +4,10 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../tauri/api", () => ({
   watchFile: async () => {},
   unwatchFile: async () => {},
+  pathExists: async () => true,
+  readMarkdownFile: async () => "",
+  allowAssets: async () => [],
+  writeMarkdownFile: async () => {},
 }));
 
 import { useConfirm } from "./confirm";

@@ -13,6 +13,9 @@ interface RecentState {
   removed: string[];
   remember: (path: string) => void;
   remove: (path: string) => void;
+  /** 清理失效条目(文件已不在磁盘上):只从列表里摘掉,不记进 removed,
+   *  文件回到磁盘上后再次打开还能自动回到列表。 */
+  prune: (path: string) => void;
   clear: () => void;
 }
 
@@ -37,6 +40,7 @@ export const useRecent = create<RecentState>()(
           files: s.files.filter((f) => f.path !== path),
           removed: [...s.removed.filter((p) => p !== path), path].slice(-MAX_REMOVED),
         })),
+      prune: (path) => set((s) => ({ files: s.files.filter((f) => f.path !== path) })),
       clear: () => set({ files: [], removed: [] }),
     }),
     { name: "openmd-recent" },

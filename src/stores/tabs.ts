@@ -1,12 +1,13 @@
 import { create } from "zustand";
 import {
   allowAssets,
+  pathExists,
   readMarkdownFile,
   unwatchFile,
   watchFile,
   writeMarkdownFile,
 } from "../tauri/api";
-import { ask } from "@tauri-apps/plugin-dialog";
+import { ask, message } from "@tauri-apps/plugin-dialog";
 import { dirnameOf, renderFull } from "../renderer/pipeline";
 import { useConfirm } from "./confirm";
 import { useRecent } from "./recent";
@@ -53,7 +54,7 @@ interface TabsState {
   /** 当前激活的标签 id;没有标签时为空串。 */
   activeId: string;
   /** Open a file (focuses its tab; an already-open file is re-read from disk). */
-  openPath: (path: string, opts?: { background?: boolean }) => Promise<void>;
+  openPath: (path: string) => Promise<void>;
   /** Re-read the file backing a tab (file-changed event). */
   refreshPath: (path: string) => Promise<void>;
   /** Code-view typing: set the edit buffer (initialized from content). */
@@ -120,6 +121,11 @@ async function confirmDialog(message: string): Promise<boolean> {
   return ask(message, { title: "OpenMD", kind: "warning" });
 }
 
+/** 原生提示框:告诉用户文件已经不在磁盘上。 */
+async function notifyMissingFile(path: string): Promise<void> {
+  await message(`文件已不存在或已被移动:\n${path}`, { title: "OpenMD", kind: "warning" });
+}
+
 /**
  * 把一个标签从本窗口摘下来(停监听、顺带把激活项挪到邻居),返回摘完后本窗口
  * 是否已经没有标签了。关闭与拖出共用这一套记账。
@@ -149,10 +155,22 @@ export const useTabs = create<TabsState>((set, get) => ({
   tabs: [],
   activeId: "",
 
-  openPath: async (path, opts) => {
+  openPath: async (path) => {
+    // 建标签之前先确认文件还在:「最近打开」里常留着已被删除或移动的路径,
+    // 直接开只会得到一个空白标签加一条错误提示。检查本身失败时按存在处理,
+    // 让真正的读取去报实情。
+    if (IN_TAURI) {
+      const exists = await pathExists(path).catch(() => true);
+      if (!exists) {
+        // 失效条目顺手从「最近打开」里清掉:留着只会让人再点一次。
+        useRecent.getState().prune(path);
+        await notifyMissingFile(path);
+        return;
+      }
+    }
+
     const existing = get().tabs.find((t) => t.path === path);
     if (existing) {
-      if (opts?.background) return;
       // Re-read: the file may have changed since it was opened.
       set((s) => ({
         activeId: existing.id,
@@ -191,25 +209,23 @@ export const useTabs = create<TabsState>((set, get) => ({
       };
       set((s) => ({
         tabs: [...s.tabs, tab],
-        activeId: opts?.background ? s.activeId : tab.id,
+        activeId: tab.id,
       }));
       useRecent.getState().remember(path);
       watchFile(path).catch((e) => console.error("watch_file failed:", e));
     } catch (e) {
-      if (!opts?.background) {
-        const tab: Tab = {
-          id: nextId(),
-          path,
-          name: baseName(path),
-          content: "",
-          draft: null,
-          lastSavedAt: 0,
-          diskChanged: false,
-          scrollY: 0,
-          error: String(e),
-        };
-        set((s) => ({ tabs: [...s.tabs, tab], activeId: tab.id }));
-      }
+      const tab: Tab = {
+        id: nextId(),
+        path,
+        name: baseName(path),
+        content: "",
+        draft: null,
+        lastSavedAt: 0,
+        diskChanged: false,
+        scrollY: 0,
+        error: String(e),
+      };
+      set((s) => ({ tabs: [...s.tabs, tab], activeId: tab.id }));
       console.error("open failed:", path, e);
     }
   },
