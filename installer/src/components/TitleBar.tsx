@@ -1,11 +1,8 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { LuMinus, LuX } from "react-icons/lu";
 import { useCallback } from "react";
-import { useTranslation } from "react-i18next";
 
 export default function TitleBar() {
-  const { t } = useTranslation();
-
   const handleMouseDown = useCallback(async (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     if (target.closest("button")) return;
@@ -33,10 +30,10 @@ export default function TitleBar() {
     <div className="titlebar" onMouseDown={handleMouseDown}>
       <div className="titlebar-spacer" />
       <div className="titlebar-controls">
-        <button className="titlebar-btn" onClick={handleMinimize} aria-label={t("minimize")}>
+        <button className="titlebar-btn" onClick={handleMinimize} aria-label="最小化">
           <LuMinus size={18} />
         </button>
-        <button className="titlebar-btn titlebar-btn-close" onClick={handleClose} aria-label={t("close")}>
+        <button className="titlebar-btn titlebar-btn-close" onClick={handleClose} aria-label="关闭">
           <LuX size={18} />
         </button>
       </div>

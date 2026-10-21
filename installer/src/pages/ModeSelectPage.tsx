@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
 import { LuX } from "react-icons/lu";
 import LicensePage from "./LicensePage";
 
@@ -11,7 +10,6 @@ interface ModeSelectPageProps {
 }
 
 export default function ModeSelectPage({ onQuick, onCustom, isUpgrade, ready }: ModeSelectPageProps) {
-  const { t } = useTranslation();
   const [agreed, setAgreed] = useState(true);
   const [showLicense, setShowLicense] = useState(false);
 
@@ -38,7 +36,7 @@ export default function ModeSelectPage({ onQuick, onCustom, isUpgrade, ready }: 
             disabled={!enabled}
             onClick={onQuick}
           >
-            {isUpgrade ? t("upgrade") : t("quick_install")}
+            {isUpgrade ? "更新" : "快速安装"}
           </button>
 
           <button
@@ -47,7 +45,7 @@ export default function ModeSelectPage({ onQuick, onCustom, isUpgrade, ready }: 
             disabled={!enabled}
             onClick={onCustom}
           >
-            {t("custom_install")}
+            自定义安装
           </button>
         </div>
       </div>
@@ -60,14 +58,14 @@ export default function ModeSelectPage({ onQuick, onCustom, isUpgrade, ready }: 
             onChange={(e) => setAgreed(e.target.checked)}
           />
           <span className="checkbox-mark" />
-          <span>{t("agree_prefix")}</span>
+          <span>我已阅读并同意</span>
         </label>
         <span
           className="agree-link"
           role="link"
           onClick={() => setShowLicense(true)}
         >
-          {t("agree_terms_name")}
+          《用户协议》
         </span>
       </div>
 
@@ -77,7 +75,7 @@ export default function ModeSelectPage({ onQuick, onCustom, isUpgrade, ready }: 
             <button
               className="modal-close"
               onClick={() => setShowLicense(false)}
-              aria-label={t("close")}
+              aria-label="关闭"
             >
               <LuX size={18} />
             </button>

@@ -7,17 +7,13 @@ import {
   Flex,
   HStack,
   IconButton,
-  Menu,
   Portal,
   Slider,
   Text,
   VStack,
 } from "@chakra-ui/react";
 import { useTheme } from "next-themes";
-import { useTranslation } from "react-i18next";
 import {
-  Check,
-  ChevronDown,
   ImagePlus,
   Minus,
   Palette,
@@ -25,7 +21,7 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { useSettings, MAX_BACKGROUND_BLUR, type Language } from "../stores/settings";
+import { useSettings, MAX_BACKGROUND_BLUR } from "../stores/settings";
 import { isFolderVerbRegistered, isMdAssociated, openImageDialog, registerFolderVerb, registerMdAssociation, unregisterFolderVerb, unregisterMdAssociation } from "../tauri/api";
 import { useBackgroundSrc } from "../lib/useBackgroundSrc";
 import { useOverlayBlur } from "../lib/overlayBlur";
@@ -33,9 +29,9 @@ import { FloatingScrollbar } from "./FloatingScrollbar";
 
 type SectionId = "general" | "appearance";
 
-const SECTIONS: { id: SectionId; labelKey: string; icon: ComponentType<{ size?: number | string }> }[] = [
-  { id: "general", labelKey: "settings.section.general", icon: SlidersHorizontal },
-  { id: "appearance", labelKey: "settings.section.appearance", icon: Palette },
+const SECTIONS: { id: SectionId; label: string; icon: ComponentType<{ size?: number | string }> }[] = [
+  { id: "general", label: "通用", icon: SlidersHorizontal },
+  { id: "appearance", label: "外观", icon: Palette },
 ];
 
 /** 「名称 + 当前状态 + 操作按钮」一行。文件关联与右键菜单两个开关共用。 */
@@ -89,7 +85,6 @@ function ToggleRow({
 }
 
 function GeneralSection() {
-  const { t } = useTranslation();
   // 文件关联状态:null = 未知/浏览器预览(不渲染该行)
   const [assoc, setAssoc] = useState<boolean | null>(null);
   const [assocBusy, setAssocBusy] = useState(false);
@@ -142,7 +137,6 @@ function GeneralSection() {
 
   return (
     <VStack align="stretch" gap={0}>
-      <LanguageRow />
       <Flex
         justify="space-between"
         align="center"
@@ -152,14 +146,14 @@ function GeneralSection() {
         borderColor="border.subtle"
       >
         <Text fontSize="sm" color="fg.muted" flexShrink={0}>
-          {t("settings.general.closeWindow")}
+          关闭窗口
         </Text>
         <HStack gap={1}>
           {(
             [
-              { v: "ask", label: t("settings.general.closeAction.ask") },
-              { v: "tray", label: t("settings.general.closeAction.tray") },
-              { v: "exit", label: t("settings.general.closeAction.exit") },
+              { v: "ask", label: "每次询问" },
+              { v: "tray", label: "隐藏到托盘" },
+              { v: "exit", label: "直接退出" },
             ] as const
           ).map((opt) => (
             <Button
@@ -175,25 +169,25 @@ function GeneralSection() {
       </Flex>
       {assoc !== null && (
         <ToggleRow
-          label={t("settings.general.fileAssociation")}
+          label="文件关联"
           on={assoc}
           busy={assocBusy}
-          statusOn={t("settings.general.associated")}
-          statusOff={t("settings.general.notAssociated")}
-          actionOn={t("settings.general.disassociate")}
-          actionOff={t("settings.general.setDefault")}
+          statusOn="已关联 .md 等文件"
+          statusOff="未关联"
+          actionOn="取消关联"
+          actionOff="设为默认"
           onToggle={() => void toggleAssociation()}
         />
       )}
       {folderVerb !== null && (
         <ToggleRow
-          label={t("settings.general.folderContextMenu")}
+          label="文件夹右键菜单"
           on={folderVerb}
           busy={folderVerbBusy}
-          statusOn={t("settings.general.enabled")}
-          statusOff={t("settings.general.notEnabled")}
-          actionOn={t("settings.general.disable")}
-          actionOff={t("settings.general.enable")}
+          statusOn="已启用"
+          statusOff="未启用"
+          actionOn="关闭"
+          actionOff="启用"
           onToggle={() => void toggleFolderVerb()}
         />
       )}
@@ -202,7 +196,6 @@ function GeneralSection() {
 }
 
 function AppearanceSection() {
-  const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
   const {
     fontSize,
@@ -226,14 +219,14 @@ function AppearanceSection() {
     <VStack align="stretch" gap={0}>
       <Flex justify="space-between" align="center" gap={6} py={3} borderBottomWidth="1px" borderColor="border.subtle">
         <Text fontSize="sm" color="fg.muted" flexShrink={0}>
-          {t("settings.appearance.theme")}
+          主题
         </Text>
         <HStack gap={1}>
           {(
             [
-              { v: "light", label: t("settings.appearance.themeLight") },
-              { v: "dark", label: t("settings.appearance.themeDark") },
-              { v: "system", label: t("settings.appearance.themeSystem") },
+              { v: "light", label: "亮色" },
+              { v: "dark", label: "暗色" },
+              { v: "system", label: "跟随系统" },
             ] as const
           ).map((opt) => (
             <Button
@@ -250,16 +243,16 @@ function AppearanceSection() {
 
       <Flex justify="space-between" align="center" gap={6} py={3} borderBottomWidth="1px" borderColor="border.subtle">
         <Text fontSize="sm" color="fg.muted" flexShrink={0}>
-          {t("settings.appearance.fontSize")}
+          正文字号 (13-28)
         </Text>
         <HStack gap={1}>
-          <IconButton aria-label={t("settings.appearance.fontSizeDecrease")} variant="ghost" size="xs" onClick={() => setFontSize(fontSize - 1)}>
+          <IconButton aria-label="减小字号" variant="ghost" size="xs" onClick={() => setFontSize(fontSize - 1)}>
             <Minus size={13} />
           </IconButton>
           <Text w="30px" textAlign="center" fontSize="sm">
             {fontSize}
           </Text>
-          <IconButton aria-label={t("settings.appearance.fontSizeIncrease")} variant="ghost" size="xs" onClick={() => setFontSize(fontSize + 1)}>
+          <IconButton aria-label="增大字号" variant="ghost" size="xs" onClick={() => setFontSize(fontSize + 1)}>
             <Plus size={13} />
           </IconButton>
         </HStack>
@@ -267,13 +260,13 @@ function AppearanceSection() {
 
       <Flex justify="space-between" align="center" gap={6} py={3} borderBottomWidth="1px" borderColor="border.subtle">
         <Text fontSize="sm" color="fg.muted" flexShrink={0}>
-          {t("settings.appearance.background")}
+          背景图片
         </Text>
         <HStack gap={2} minW={0}>
           {backgroundSrc && (
             <chakra.button
               type="button"
-              title={t("settings.appearance.backgroundChoose")}
+              title="选择图片"
               onClick={() => void pickBackground()}
               w="44px"
               h="28px"
@@ -293,16 +286,16 @@ function AppearanceSection() {
             </chakra.button>
           )}
           <Text fontSize="xs" color="fg.subtle" truncate maxW="160px" title={backgroundImage ?? undefined}>
-            {backgroundName ?? t("settings.appearance.backgroundNone")}
+            {backgroundName ?? "未设置"}
           </Text>
           <Button size="xs" variant="subtle" gap={1} onClick={() => void pickBackground()}>
             <ImagePlus size={12} />
-            {t("settings.appearance.backgroundChoose")}
+            选择图片
           </Button>
           {backgroundImage && (
             <IconButton
-              aria-label={t("settings.appearance.backgroundRemove")}
-              title={t("settings.appearance.backgroundRemove")}
+              aria-label="移除背景"
+              title="移除背景"
               variant="ghost"
               size="xs"
               onClick={() => setBackgroundImage(null)}
@@ -317,7 +310,7 @@ function AppearanceSection() {
       {backgroundImage && (
         <Flex justify="space-between" align="center" gap={6} py={3} borderBottomWidth="1px" borderColor="border.subtle">
           <Text fontSize="sm" color="fg.muted" flexShrink={0}>
-            {t("settings.appearance.backgroundBlur")}
+            背景模糊
           </Text>
           <HStack gap={3}>
             <Slider.Root
@@ -346,85 +339,11 @@ function AppearanceSection() {
   );
 }
 
-/** 界面语言选择行(通用设置第一行)。 */
-function LanguageRow() {
-  const { t } = useTranslation();
-  const language = useSettings((s) => s.language);
-  const setLanguage = useSettings((s) => s.setLanguage);
-  const options = [
-    { v: "auto", label: t("settings.language.auto") },
-    // 语言名用各自的原文显示,不随界面语言翻译。
-    { v: "zh", label: "简体中文" },
-    { v: "zh-TW", label: "繁體中文" },
-    { v: "ja", label: "日本語" },
-    { v: "en", label: "English" },
-  ] as const;
-  const current = options.find((o) => o.v === language) ?? options[0];
-  return (
-    <Flex
-      justify="space-between"
-      align="center"
-      gap={6}
-      py={3}
-      borderBottomWidth="1px"
-      borderColor="border.subtle"
-    >
-      <Text fontSize="sm" color="fg.muted" flexShrink={0}>
-        {t("settings.language.label")}
-      </Text>
-      <Menu.Root>
-        <Menu.Trigger asChild>
-          <Button size="xs" variant="outline" borderColor="border.subtle" fontWeight="normal" gap={1}>
-            {current.label}
-            <ChevronDown size={12} opacity={0.55} />
-          </Button>
-        </Menu.Trigger>
-        <Portal>
-          <Menu.Positioner zIndex={1000}>
-            <Menu.Content
-              minW="110px"
-              bg="bg"
-              borderWidth="1px"
-              borderColor="border.subtle"
-              borderRadius="10px"
-              boxShadow="md"
-              overflow="hidden"
-              p={1}
-            >
-              <Menu.RadioItemGroup
-                value={language}
-                onValueChange={(e) => setLanguage(e.value as Language)}
-              >
-                {options.map((o) => (
-                  <Menu.RadioItem
-                    key={o.v}
-                    value={o.v}
-                    display="flex"
-                    justifyContent="space-between"
-                    fontSize="sm"
-                    px={2}
-                    py={1.5}
-                    borderRadius="6px"
-                  >
-                    {o.label}
-                    {language === o.v && <Check size={14} aria-hidden />}
-                  </Menu.RadioItem>
-                ))}
-              </Menu.RadioItemGroup>
-            </Menu.Content>
-          </Menu.Positioner>
-        </Portal>
-      </Menu.Root>
-    </Flex>
-  );
-}
-
 /**
  * 设置弹窗:左侧导航(通用/外观) + 右侧内容。
  * 背景半透明模糊;由首页左下角与顶栏"主题"左侧的设置按钮唤起。
  */
 export function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { t } = useTranslation();
   const [section, setSection] = useState<SectionId>("general");
   const contentRef = useRef<HTMLDivElement>(null);
   // 打开时模糊整个 App 内容(见 lib/overlayBlur.ts)。
@@ -454,7 +373,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
           >
             <Dialog.CloseTrigger asChild>
               <IconButton
-                aria-label={t("settings.close")}
+                aria-label="关闭设置"
                 variant="ghost"
                 size="xs"
                 position="absolute"
@@ -492,7 +411,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                       onClick={() => setSection(s.id)}
                     >
                       <s.icon size={15} />
-                      {t(s.labelKey)}
+                      {s.label}
                     </Button>
                   );
                 })}

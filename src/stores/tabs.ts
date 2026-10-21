@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import i18n from "i18next";
 import {
   allowAssets,
   readMarkdownFile,
@@ -96,7 +95,7 @@ async function loadContent(path: string): Promise<string> {
   }
   const resp = await fetch(baseName(path));
   if (!resp.ok) {
-    throw new Error(i18n.t("stores.tabs.browserPreviewOpenError", { path }));
+    throw new Error(`浏览器预览模式只能打开 public/ 下的文件(如 sample.md):${path}`);
   }
   return resp.text();
 }
@@ -263,7 +262,7 @@ export const useTabs = create<TabsState>((set, get) => ({
     const edited = tab.draft ?? tab.content;
     if (edited === tab.content) return;
     if (tab.diskChanged) {
-      const ok = await confirmDialog(i18n.t("stores.tabs.overwriteDiskChanged"));
+      const ok = await confirmDialog("文件已在磁盘上被修改。仍要用编辑内容覆盖吗?");
       if (!ok) return;
     }
     // Textareas hand the value back with LF endings; write the file back in

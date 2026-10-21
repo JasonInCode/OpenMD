@@ -1,5 +1,4 @@
 import { useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { Box, HStack, Text } from "@chakra-ui/react";
 import { AppWindow, ChevronDown } from "lucide-react";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
@@ -69,7 +68,6 @@ function ExplorerIcon({ size = 16 }: { size?: number }) {
  * 自身不占固定宽度,只跟内容走。
  */
 export function OpenWithControl() {
-  const { t } = useTranslation();
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
   const [menuEditors, setMenuEditors] = useState<EditorApp[] | null>(null);
   const [selection, setSelection] = useState<OpenWithSelection | null>(loadSelection);
@@ -147,7 +145,7 @@ export function OpenWithControl() {
 
     const entries: MenuEntry[] = [];
     if (editors.length === 0) {
-      entries.push({ type: "item", label: t("tabs.openWith.noEditors"), disabled: true, onClick: () => {} });
+      entries.push({ type: "item", label: "未检测到其他程序", disabled: true, onClick: () => {} });
     }
     entries.push(
       ...editors.map(
@@ -165,7 +163,7 @@ export function OpenWithControl() {
       { type: "sep" },
       {
         type: "item",
-        label: t("tabs.openWith.explorer"),
+        label: "资源管理器",
         icon: <ExplorerIcon size={16} />,
         active: selection === null || selection.kind === "explorer",
         keepOpen: true,
@@ -179,16 +177,16 @@ export function OpenWithControl() {
   // 资源管理器 / 某个程序 → 显示对应图标与名称。
   // 未保存选择时，实际默认动作就是资源管理器，主按钮也按该默认项显示。
   let mainIcon = <ExplorerIcon size={14} />;
-  let mainLabel = t("tabs.openWith.explorerShort");
-  let mainTitle = t("tabs.openWith.showInExplorerShort");
+  let mainLabel = "资源管理器";
+  let mainTitle = "在资源管理器中显示";
   if (selection?.kind === "explorer") {
     mainIcon = <ExplorerIcon size={14} />;
-    mainLabel = t("tabs.openWith.explorerShort");
-    mainTitle = t("tabs.openWith.showInExplorerShort");
+    mainLabel = "资源管理器";
+    mainTitle = "在资源管理器中显示";
   } else if (selection?.kind === "editor" && selection.name) {
     mainIcon = <EditorIcon icon={selection.icon} size={14} />;
     mainLabel = selection.name;
-    mainTitle = t("tabs.openWith.openWithApp", { name: selection.name });
+    mainTitle = `用 ${selection.name} 打开`;
   }
 
   return (
@@ -237,8 +235,8 @@ export function OpenWithControl() {
           cursor={hasFile ? "pointer" : "default"}
           _hover={hasFile ? { bg: "bg.subtle" } : {}}
           opacity={hasFile ? 1 : 0.45}
-          aria-label={t("tabs.openWith.chooseOther")}
-          title={t("tabs.openWith.chooseOther")}
+          aria-label="选择其他程序打开"
+          title="选择其他程序打开"
           onClick={() => {
             if (hasFile) void openWithMenu();
           }}

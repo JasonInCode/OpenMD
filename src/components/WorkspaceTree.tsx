@@ -1,5 +1,4 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import { useTranslation } from "react-i18next";
 import { Box, Button, Text, VStack } from "@chakra-ui/react";
 import { ChevronDown, ChevronRight, FileText, Folder, FolderOpen } from "lucide-react";
 import { useTabs } from "../stores/tabs";
@@ -69,7 +68,6 @@ function Row({ name, depth, isDir, expanded, active, onClick }: RowProps) {
  * 未打开工作区时显示引导按钮。浏览器预览环境没有文件 IO,树保持为空。
  */
 export function WorkspaceTree({ onOpenFolder }: { onOpenFolder: () => void }) {
-  const { t } = useTranslation();
   const root = useWorkspace((s) => s.root);
   const expanded = useWorkspace((s) => s.expanded);
   const children = useWorkspace((s) => s.children);
@@ -89,7 +87,7 @@ export function WorkspaceTree({ onOpenFolder }: { onOpenFolder: () => void }) {
       <VStack gap={3} px={4} py={10} align="center">
         <FolderOpen size={22} color="var(--chakra-colors-fg-subtle)" />
         <Text fontSize="xs" color="fg.subtle" textAlign="center" lineHeight="1.6">
-          {t("shell.workspaceEmpty")}
+          打开一个文件夹，浏览其中的 Markdown 文件
         </Text>
         <Button
           size="xs"
@@ -101,7 +99,7 @@ export function WorkspaceTree({ onOpenFolder }: { onOpenFolder: () => void }) {
           onClick={onOpenFolder}
         >
           <FolderOpen size={13} />
-          {t("shell.openFolder")}
+          打开文件夹
         </Button>
       </VStack>
     );
@@ -152,7 +150,7 @@ export function WorkspaceTree({ onOpenFolder }: { onOpenFolder: () => void }) {
         px={2}
         py={2}
         as="nav"
-        aria-label={t("shell.workspace")}
+        aria-label="文件夹"
       >
         <Row
           name={baseName(root)}
@@ -167,7 +165,7 @@ export function WorkspaceTree({ onOpenFolder }: { onOpenFolder: () => void }) {
             (读取失败时 children 里没有这个 key,不显示提示,免得误报"空文件夹"。) */}
         {children.get(root)?.length === 0 && (
           <Text fontSize="xs" color="fg.subtle" px={3} py={2}>
-            {t("shell.workspaceNoFiles")}
+            此文件夹中没有文档
           </Text>
         )}
       </Box>

@@ -1,7 +1,6 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use rust_i18n::t;
 use tauri::{AppHandle, Manager};
 
 /// 前端诊断日志入口(追加到 app_data_dir/assoc-debug.log,排查文件关联转发链路)
@@ -29,15 +28,15 @@ pub fn read_markdown_file(path: String) -> Result<String, String> {
     let p = Path::new(&path);
 
     if !has_allowed_extension(p) {
-        return Err(t!("read.refuse_non_text", path = path).into_owned());
+        return Err(format!("拒绝读取非文本文件: {}", path));
     }
 
     if !p.exists() {
-        return Err(t!("read.not_found", path = path).into_owned());
+        return Err(format!("文件不存在: {}", path));
     }
 
     if !p.is_file() {
-        return Err(t!("read.not_a_file", path = path).into_owned());
+        return Err(format!("不是常规文件: {}", path));
     }
 
     fs::read_to_string(p).map_err(|e| {
@@ -46,9 +45,9 @@ pub fn read_markdown_file(path: String) -> Result<String, String> {
         // dropdown that produces a BOM. The raw io error ("stream did not
         // contain valid UTF-8") tells a user nothing they can act on.
         if e.kind() == std::io::ErrorKind::InvalidData {
-            t!("read.not_utf8", path = path).into_owned()
+            format!("{} 不是 UTF-8 编码,无法打开。请将其重新保存为 UTF-8 编码(记事本:文件 > 另存为 > 编码: UTF-8)。", path)
         } else {
-            t!("read.failed", error = e).into_owned()
+            format!("读取文件失败: {}", e)
         }
     })
 }
@@ -63,14 +62,14 @@ pub fn write_markdown_file(path: String, content: String) -> Result<(), String> 
     let p = Path::new(&path);
 
     if !has_allowed_extension(p) {
-        return Err(t!("write.refuse_non_text", path = path).into_owned());
+        return Err(format!("拒绝写入非文本文件: {}", path));
     }
 
     if p.exists() && !p.is_file() {
-        return Err(t!("read.not_a_file", path = path).into_owned());
+        return Err(format!("不是常规文件: {}", path));
     }
 
-    fs::write(p, content).map_err(|e| t!("write.failed", error = e).into_owned())
+    fs::write(p, content).map_err(|e| format!("写入文件失败: {}", e))
 }
 
 /// The current user's home directory.
@@ -117,7 +116,7 @@ pub fn resolve_path(path: String) -> Result<String, String> {
         p.to_path_buf()
     } else {
         std::env::current_dir()
-            .map_err(|e| t!("path.cwd_failed", error = e).into_owned())?
+            .map_err(|e| format!("无法确定当前目录: {}", e))?
             .join(p)
     };
 
@@ -126,7 +125,7 @@ pub fn resolve_path(path: String) -> Result<String, String> {
         .unwrap_or(absolute)
         .to_str()
         .map(|s| strip_verbatim_prefix(s.to_string()))
-        .ok_or_else(|| t!("path.invalid_utf8", path = path).into_owned())
+        .ok_or_else(|| format!("路径不是有效的 UTF-8: {}", path))
 }
 
 /// Whether a path exists on disk. Used by the local-file-link handler to
@@ -210,9 +209,9 @@ pub(crate) fn natural_cmp(a: &str, b: &str) -> std::cmp::Ordering {
 pub fn list_workspace_dir(path: String) -> Result<Vec<WorkspaceEntry>, String> {
     let dir = Path::new(&path);
     if !dir.is_dir() {
-        return Err(t!("workspace.not_a_dir", path = path).into_owned());
+        return Err(format!("不是文件夹: {}", path));
     }
-    let entries = fs::read_dir(dir).map_err(|e| t!("read.failed", error = e).into_owned())?;
+    let entries = fs::read_dir(dir).map_err(|e| format!("读取文件失败: {}", e))?;
     let mut dirs: Vec<WorkspaceEntry> = Vec::new();
     let mut files: Vec<WorkspaceEntry> = Vec::new();
     for entry in entries.flatten() {
@@ -339,7 +338,7 @@ pub struct WorkspaceFiles {
 pub fn list_workspace_files(path: String) -> Result<WorkspaceFiles, String> {
     let root = Path::new(&path);
     if !root.is_dir() {
-        return Err(t!("workspace.not_a_dir", path = path).into_owned());
+        return Err(format!("不是文件夹: {}", path));
     }
     let mut remaining = WORKSPACE_SCAN_MAX_FILES;
     let found = scan_markdown_files(root, &mut remaining);
@@ -569,34 +568,34 @@ pub struct ImportedImage {
 pub fn import_image(document_path: String, source_path: String) -> Result<ImportedImage, String> {
     let source = Path::new(&source_path);
     if !has_allowed_image_extension(source) {
-        return Err(t!("image.not_image", path = source_path).into_owned());
+        return Err(format!("不是图片文件: {}", source_path));
     }
     if !source.is_file() {
-        return Err(t!("image.not_found", path = source_path).into_owned());
+        return Err(format!("找不到图片: {}", source_path));
     }
     // Canonicalize so symlinks and `..` cannot redirect the copy elsewhere.
     let source =
-        fs::canonicalize(source).map_err(|e| t!("image.resolve_failed", path = source_path, error = e).into_owned())?;
+        fs::canonicalize(source).map_err(|e| format!("无法解析图片 {}: {}", source_path, e))?;
 
     let doc_dir = Path::new(&document_path)
         .parent()
-        .ok_or_else(|| t!("image.no_parent", path = document_path).into_owned())?;
+        .ok_or_else(|| format!("文档没有父目录: {}", document_path))?;
     let doc_dir = fs::canonicalize(doc_dir)
-        .map_err(|e| t!("image.resolve_dir_failed", error = e).into_owned())?;
+        .map_err(|e| format!("无法解析文档所在目录: {}", e))?;
 
     let target = if source.starts_with(&doc_dir) {
         source.clone()
     } else {
         let folder = doc_dir.join(IMAGE_FOLDER);
         fs::create_dir_all(&folder)
-            .map_err(|e| t!("image.create_folder_failed", folder = folder.display(), error = e).into_owned())?;
+            .map_err(|e| format!("无法创建 {}: {}", folder.display(), e))?;
         let name = source
             .file_name()
-            .ok_or_else(|| t!("image.no_file_name", path = source_path).into_owned())?;
+            .ok_or_else(|| format!("图片没有文件名: {}", source_path))?;
         let (target, needs_copy) = unique_target(&folder, name, &source);
         if needs_copy {
             fs::copy(&source, &target)
-                .map_err(|e| t!("image.copy_failed", folder = folder.display(), error = e).into_owned())?;
+                .map_err(|e| format!("无法复制图片到 {}: {}", folder.display(), e))?;
         }
         target
     };
@@ -695,7 +694,7 @@ pub fn allow_assets(
     for p in &allowed {
         scope
             .allow_file(p)
-            .map_err(|e| t!("asset.allow_failed", path = p.display(), error = e).into_owned())?;
+            .map_err(|e| format!("无法放行资源文件 {}: {}", p.display(), e))?;
     }
     Ok(rejected)
 }
@@ -810,11 +809,10 @@ mod fs_scope_tests {
 
     #[test]
     fn read_rejects_a_non_text_path_before_touching_disk() {
-        rust_i18n::set_locale("en");
         // The path does not exist; the extension guard must fire first, so the
         // error is the refusal, never a "file not found".
         let err = read_markdown_file("/home/u/.ssh/id_rsa".into()).unwrap_err();
-        assert!(err.contains("Refusing to read"), "got: {err}");
+        assert!(err.contains("拒绝读取非文本文件"), "got: {err}");
     }
 
     #[test]
@@ -833,7 +831,6 @@ mod fs_scope_tests {
 
     #[test]
     fn a_non_utf8_file_reports_the_encoding_rather_than_the_io_error() {
-        rust_i18n::set_locale("en");
         // Notepad offers UTF-16 in the same Save As dropdown that produces a
         // BOM. `read_to_string` rejects it with "stream did not contain valid
         // UTF-8", which tells a user nothing actionable.
@@ -843,8 +840,8 @@ mod fs_scope_tests {
         std::fs::write(&file, b"\xFF\xFE\x23\x00\x20\x00\x48\x00\x69\x00").unwrap();
 
         let err = read_markdown_file(file.to_string_lossy().into_owned()).unwrap_err();
-        assert!(err.contains("not UTF-8 encoded"), "got: {err}");
-        assert!(err.contains("Re-save it as UTF-8"), "got: {err}");
+        assert!(err.contains("不是 UTF-8 编码"), "got: {err}");
+        assert!(err.contains("请将其重新保存为 UTF-8 编码"), "got: {err}");
         assert!(!err.contains("stream did not contain"), "raw io error leaked: {err}");
 
         std::fs::remove_dir_all(&dir).ok();
@@ -858,11 +855,10 @@ mod write_tests {
 
     #[test]
     fn write_refuses_a_non_text_path_before_touching_disk() {
-        rust_i18n::set_locale("en");
         // The path does not exist; the extension guard must fire first, so the
         // error is the refusal, never an io error.
         let err = write_markdown_file("/home/u/a.sh".into(), "x".into()).unwrap_err();
-        assert!(err.contains("Refusing to write"), "got: {err}");
+        assert!(err.contains("拒绝写入非文本文件"), "got: {err}");
     }
 
     #[test]
@@ -878,7 +874,6 @@ mod write_tests {
 
     #[test]
     fn write_refuses_a_directory_with_a_text_extension() {
-        rust_i18n::set_locale("en");
         // A directory named `folder.md` passes the extension guard; the
         // is_file check is what keeps the io error meaningful.
         let dir = scratch("write");
@@ -886,7 +881,7 @@ mod write_tests {
         std::fs::create_dir_all(&folder).unwrap();
 
         let err = write_markdown_file(folder.to_string_lossy().into_owned(), "x".into()).unwrap_err();
-        assert!(err.contains("Not a file"), "got: {err}");
+        assert!(err.contains("不是常规文件"), "got: {err}");
         std::fs::remove_dir_all(&dir).ok();
     }
 }

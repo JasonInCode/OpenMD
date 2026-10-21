@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { listen } from "@tauri-apps/api/event";
@@ -68,7 +67,6 @@ async function drainOpenedPaths(): Promise<void> {
 }
 
 export default function App() {
-  const { t } = useTranslation();
   const tabs = useTabs((s) => s.tabs);
   const activeId = useTabs((s) => s.activeId);
   const refreshPath = useTabs((s) => s.refreshPath);
@@ -136,8 +134,8 @@ export default function App() {
     const prev = prevEditModeRef.current;
     prevEditModeRef.current = editMode;
     if (prev === null || prev === editMode || !activeTab?.path) return;
-    showTopNotice(editMode ? t("shell.editModeOn") : t("shell.editModeOff"));
-  }, [editMode, activeTab?.path, t]);
+    showTopNotice(editMode ? "已进入编辑模式" : "已退出编辑模式");
+  }, [editMode, activeTab?.path]);
 
   // 启动固定停留在首页(不自动恢复上次会话);只处理系统"打开方式"
   // /拖拽缓冲的文件请求。在纯浏览器环境(开发预览)不处理。
@@ -431,7 +429,7 @@ export default function App() {
           boxShadow="lg"
           zIndex={100}
         >
-          {t("shell.openErrorClickToDismiss", { error: openError })}
+          {`${openError} — 点击关闭`}
         </Flex>
       )}
       <CloseDialog open={closeDialogOpen} onClose={() => setCloseDialogOpen(false)} />

@@ -1,11 +1,10 @@
 //! 系统托盘:左键单击显示主窗口,右键菜单(显示主窗口 / 退出)。
 
-use rust_i18n::t;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager};
 
-/// 托盘图标 id(切换语言重建菜单时按此查找)。
+/// 托盘图标 id(重建菜单时按此查找)。
 pub const TRAY_ID: &str = "main-tray";
 
 /// 显示并聚焦主窗口(托盘唤起 / 第二实例转发文件时使用)。
@@ -17,21 +16,13 @@ pub fn show_main_window(app: &AppHandle) {
     }
 }
 
-/// 按当前语言构建托盘右键菜单。
+/// 构建托盘右键菜单。
 pub fn build_tray_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
-    let show = MenuItem::with_id(app, "show", t!("tray.show"), true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", t!("tray.quit"), true, None::<&str>)?;
+    let show = MenuItem::with_id(app, "show", "显示主窗口", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
     Menu::with_items(app, &[&show, &quit])
 }
 
-/// 用当前语言重建托盘菜单(set_language 切换语言后调用,托盘原地刷新)。
-pub fn refresh_tray_menu(app: &AppHandle) -> tauri::Result<()> {
-    if let Some(tray) = app.tray_by_id(TRAY_ID) {
-        let menu = build_tray_menu(app)?;
-        tray.set_menu(Some(menu))?;
-    }
-    Ok(())
-}
 
 pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
     let menu = build_tray_menu(app)?;

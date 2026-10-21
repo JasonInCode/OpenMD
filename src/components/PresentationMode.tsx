@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Box, HStack, IconButton, Text } from "@chakra-ui/react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
 import { dirnameOf, renderFull, stripFrontmatter } from "../renderer/pipeline";
 import { renderRichBlocks } from "../renderer/richBlocks";
@@ -17,7 +16,6 @@ export function PresentationMode({
   path: string;
   onExit: () => void;
 }) {
-  const { t } = useTranslation();
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme !== "light";
   const slides = useMemo(
@@ -76,7 +74,7 @@ export function PresentationMode({
       p={6}
     >
       <IconButton
-        aria-label={t("misc.previousSlide")}
+        aria-label="上一页"
         variant="ghost"
         color="white"
         disabled={current === 0}
@@ -108,7 +106,7 @@ export function PresentationMode({
         </HStack>
       </Box>
       <IconButton
-        aria-label={t("misc.nextSlide")}
+        aria-label="下一页"
         variant="ghost"
         color="white"
         disabled={current >= slides.length - 1}
@@ -117,7 +115,7 @@ export function PresentationMode({
         <ChevronRight />
       </IconButton>
       <IconButton
-        aria-label={t("misc.exitPresentation")}
+        aria-label="退出演示"
         variant="ghost"
         color="white"
         position="absolute"

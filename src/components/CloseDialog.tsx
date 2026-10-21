@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import {
   Button,
   Checkbox,
@@ -27,7 +26,6 @@ interface CloseDialogProps {
  * 询问"隐藏到托盘"还是"退出程序"。勾选"不再提醒"后写入设置(通用页可改回)。
  */
 export function CloseDialog({ open, onClose }: CloseDialogProps) {
-  const { t } = useTranslation();
   const [remember, setRemember] = useState(false);
   const setCloseAction = useSettings((s) => s.setCloseAction);
   // 打开时模糊整个 App 内容(见 lib/overlayBlur.ts)。
@@ -72,11 +70,11 @@ export function CloseDialog({ open, onClose }: CloseDialogProps) {
             w="min(380px, 90vw)"
           >
             <VStack gap={3} align="stretch">
-              <Dialog.Title fontSize="md">{t("tabs.closeDialog.title")}</Dialog.Title>
+              <Dialog.Title fontSize="md">关闭 OpenMD</Dialog.Title>
               <Dialog.Body p={0}>
                 <VStack gap={3} align="stretch">
                   <Text fontSize="sm" color="fg.muted">
-                    {t("tabs.closeDialog.message")}
+                    要隐藏到系统托盘继续运行，还是退出 OpenMD？
                   </Text>
                   <Checkbox.Root
                     size="sm"
@@ -85,14 +83,14 @@ export function CloseDialog({ open, onClose }: CloseDialogProps) {
                   >
                     <Checkbox.HiddenInput />
                     <Checkbox.Control />
-                    <Checkbox.Label>{t("tabs.closeDialog.remember")}</Checkbox.Label>
+                    <Checkbox.Label>不再提醒，记住我的选择</Checkbox.Label>
                   </Checkbox.Root>
                 </VStack>
               </Dialog.Body>
               <Dialog.Footer p={0} pt={1}>
                 <HStack gap={2} w="100%" justify="flex-end">
                   <Button size="sm" variant="ghost" onClick={onClose}>
-                    {t("tabs.closeDialog.cancel")}
+                    取消
                   </Button>
                   <Button
                     size="sm"
@@ -101,7 +99,7 @@ export function CloseDialog({ open, onClose }: CloseDialogProps) {
                     onClick={hideToTray}
                   >
                     <Minimize2 size={14} />
-                    {t("tabs.closeDialog.hideToTray")}
+                    隐藏到托盘
                   </Button>
                   <Button
                     size="sm"
@@ -110,7 +108,7 @@ export function CloseDialog({ open, onClose }: CloseDialogProps) {
                     onClick={quit}
                   >
                     <LogOut size={14} />
-                    {t("tabs.closeDialog.quit")}
+                    退出
                   </Button>
                 </HStack>
               </Dialog.Footer>

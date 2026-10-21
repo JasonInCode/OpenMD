@@ -1,4 +1,3 @@
-import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
@@ -7,8 +6,6 @@ interface FinishPageProps {
 }
 
 export default function FinishPage({ targetDir }: FinishPageProps) {
-  const { t } = useTranslation();
-
   // 关闭前统一调度安装程序自删除（更新场景清理）
   const closeSelf = async () => {
     try {
@@ -43,7 +40,7 @@ export default function FinishPage({ targetDir }: FinishPageProps) {
           onClick={closeSelf}
           style={{ flex: 1 }}
         >
-          {t("btn_cancel")}
+          取消
         </button>
         <button
           type="button"
@@ -51,7 +48,7 @@ export default function FinishPage({ targetDir }: FinishPageProps) {
           onClick={handleLaunch}
           style={{ flex: 1 }}
         >
-          {t("launch_now")}
+          立即启动
         </button>
       </div>
     </div>

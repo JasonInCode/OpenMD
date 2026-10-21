@@ -1,10 +1,7 @@
-import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 export default function CompletePage() {
-  const { t } = useTranslation();
-
   const handleClose = async () => {
     // Spawn detached cleanup batch first, then close immediately
     invoke("self_delete").catch(() => {});
@@ -27,7 +24,7 @@ export default function CompletePage() {
         onClick={handleClose}
         style={{ maxWidth: 360, alignSelf: "center", width: "100%" }}
       >
-        {t("complete_btn")}
+        完成
       </button>
     </div>
   );

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 
@@ -26,7 +25,6 @@ function formatSize(bytes: number): string {
 }
 
 export default function SelectDirPage({ onDirChange, onValidChange, onShortcutChange, createDesktopShortcut = true, onAssociateChange, associateMd = true, onFolderVerbChange, folderVerb = true, onInstall, onBack }: SelectDirPageProps) {
-  const { t } = useTranslation();
   const [dir, setDir] = useState("");
   const [available, setAvailable] = useState<number>(-1);
   const [checking, setChecking] = useState(true);
@@ -61,7 +59,7 @@ export default function SelectDirPage({ onDirChange, onValidChange, onShortcutCh
       const selected = await open({
         directory: true,
         multiple: false,
-        title: t("dir_title"),
+        title: "选择安装位置",
       });
       if (selected) {
         const target = `${selected}\\OpenMD`;
@@ -98,7 +96,7 @@ export default function SelectDirPage({ onDirChange, onValidChange, onShortcutCh
       {/* 安装路径 */}
       <div>
         <div style={{ fontSize: 13, color: "rgba(255, 255, 255, 0.6)", marginBottom: 8 }}>
-          {t("dir_title")}
+          选择安装位置
         </div>
         <div className="dir-selector">
           <input
@@ -107,14 +105,14 @@ export default function SelectDirPage({ onDirChange, onValidChange, onShortcutCh
             onChange={handleInputChange}
             placeholder="C:\\Program Files\\OpenMD"
           />
-          <button onClick={handleBrowse}>{t("dir_browse")}</button>
+          <button onClick={handleBrowse}>浏览</button>
         </div>
       </div>
 
       {/* 空间信息 + 快捷方式 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24 }}>
         <div style={{ fontSize: 13, color: "rgba(255, 255, 255, 0.6)" }}>
-          {t("dir_space")}
+          可用空间：
           <span style={{ color: "#ffffff", fontWeight: 600 }}>
             {checking ? <span className="space-spinner" /> : formatSize(available)}
           </span>
@@ -126,7 +124,7 @@ export default function SelectDirPage({ onDirChange, onValidChange, onShortcutCh
             onChange={(e) => onShortcutChange?.(e.target.checked)}
           />
           <span className="checkbox-mark" />
-          {t("dir_shortcut")}
+          创建桌面快捷方式
         </label>
         <label className="checkbox-label">
           <input
@@ -135,7 +133,7 @@ export default function SelectDirPage({ onDirChange, onValidChange, onShortcutCh
             onChange={(e) => onAssociateChange?.(e.target.checked)}
           />
           <span className="checkbox-mark" />
-          {t("dir_associate_md")}
+          关联 .md 文件
         </label>
         <label className="checkbox-label">
           <input
@@ -144,13 +142,13 @@ export default function SelectDirPage({ onDirChange, onValidChange, onShortcutCh
             onChange={(e) => onFolderVerbChange?.(e.target.checked)}
           />
           <span className="checkbox-mark" />
-          {t("dir_folder_context_menu")}
+          文件夹右键菜单
         </label>
       </div>
 
       {!enoughSpace && !checking && (
         <div style={{ fontSize: 13, color: "rgba(255, 255, 255, 0.75)" }}>
-          {t("error_space")}
+          磁盘空间不足
         </div>
       )}
 
@@ -161,7 +159,7 @@ export default function SelectDirPage({ onDirChange, onValidChange, onShortcutCh
           onClick={onBack}
           style={{ flex: 1 }}
         >
-          {t("btn_back")}
+          上一步
         </button>
         <button
           type="button"
@@ -170,7 +168,7 @@ export default function SelectDirPage({ onDirChange, onValidChange, onShortcutCh
           onClick={onInstall}
           style={{ flex: 1 }}
         >
-          {t("btn_install")}
+          安装
         </button>
       </div>
     </div>

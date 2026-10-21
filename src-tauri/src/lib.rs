@@ -1,9 +1,6 @@
-rust_i18n::i18n!("locales", fallback = "zh");
-
 mod commands;
 mod editors;
 mod file_assoc;
-mod i18n;
 mod stats;
 mod tab_drag;
 mod tray;
@@ -162,9 +159,6 @@ fn quit_app(app: AppHandle) {
 }
 
 pub fn run() {
-    // 前端 LanguageSync 启动后会同步语言;默认中文,保证托盘菜单等原生 UI 首帧即为中文。
-    rust_i18n::set_locale("zh");
-
     let (initial_files, initial_folders) = collect_open_args(std::env::args());
 
     tauri::Builder::default()
@@ -226,7 +220,6 @@ pub fn run() {
             tab_drag::begin_tab_drag,
             tab_drag::end_tab_drag,
             tab_drag::take_pending_tabs,
-            i18n::set_language,
             commands::log_assoc,
             file_assoc::is_md_associated,
             file_assoc::register_md_association,

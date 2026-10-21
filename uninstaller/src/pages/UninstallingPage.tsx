@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 
 interface UninstallingPageProps {
@@ -11,9 +10,8 @@ export default function UninstallingPage({
   onComplete,
   onError,
 }: UninstallingPageProps) {
-  const { t } = useTranslation();
   const [progress, setProgress] = useState(0);
-  const [statusText, setStatusText] = useState(t("uninstall_deleting"));
+  const [statusText, setStatusText] = useState("正在删除程序文件...");
   const hasStarted = useRef(false);
 
   useEffect(() => {
@@ -22,7 +20,7 @@ export default function UninstallingPage({
 
     const doUninstall = async () => {
       try {
-        setStatusText(t("uninstall_deleting"));
+        setStatusText("正在删除程序文件...");
         for (let i = 0; i <= 60; i += 5) {
           setProgress(i);
           await new Promise((r) => setTimeout(r, 30));
@@ -30,20 +28,20 @@ export default function UninstallingPage({
 
         await invoke("start_uninstall");
 
-        setStatusText(t("uninstall_shortcuts"));
+        setStatusText("正在删除快捷方式...");
         for (let i = 60; i <= 80; i += 3) {
           setProgress(i);
           await new Promise((r) => setTimeout(r, 20));
         }
 
-        setStatusText(t("uninstall_registry"));
+        setStatusText("正在清理注册表...");
         for (let i = 80; i < 100; i += 2) {
           setProgress(i);
           await new Promise((r) => setTimeout(r, 15));
         }
 
         setProgress(100);
-        setStatusText(t("uninstall_done"));
+        setStatusText("卸载完成！");
         await new Promise((r) => setTimeout(r, 500));
         onComplete();
       } catch (err: any) {

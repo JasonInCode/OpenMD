@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import {
   Box,
   Button,
@@ -37,7 +36,6 @@ import { WindowControls } from "./WindowControls";
 import { TitleBarSliderControl } from "./TitleBarSliderControl";
 
 export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void }) {
-  const { t } = useTranslation();
   const {
     fontSize,
     setFontSize,
@@ -167,8 +165,8 @@ export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void 
           {canEdit && (
             <>
               <IconButton
-                aria-label={t("viewer.toolbar.toggleEdit")}
-                title={t("viewer.toolbar.editTitle")}
+                aria-label="切换编辑模式 (Ctrl+E)"
+                title="编辑模式 (Ctrl+E)"
                 variant="ghost"
                 size={compact ? "xs" : "sm"}
                 bg={editMode ? "fg" : "transparent"}
@@ -179,8 +177,8 @@ export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void 
                 <Pencil size={14} />
               </IconButton>
               <IconButton
-                aria-label={t("viewer.toolbar.saveShortcut")}
-                title={t("viewer.toolbar.saveShortcut")}
+                aria-label="保存 (Ctrl+S)"
+                title="保存 (Ctrl+S)"
                 variant="ghost"
                 size={compact ? "xs" : "sm"}
                 disabled={!dirty}
@@ -198,8 +196,8 @@ export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void 
             <Menu.Trigger asChild>
               {compact ? (
                 <IconButton
-                  aria-label={t("shell.open")}
-                  title={t("shell.open")}
+                  aria-label="打开"
+                  title="打开"
                   variant="ghost"
                   size="xs"
                   onPointerEnter={showOpenMenu}
@@ -209,8 +207,8 @@ export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void 
                 </IconButton>
               ) : (
                 <Button
-                  aria-label={t("shell.open")}
-                  title={t("shell.open")}
+                  aria-label="打开"
+                  title="打开"
                   variant="ghost"
                   size="sm"
                   gap={1.5}
@@ -218,7 +216,7 @@ export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void 
                   onPointerLeave={scheduleOpenMenuClose}
                 >
                   <FolderOpen size={15} />
-                  {t("shell.open")}
+                  打开
                   <ChevronDown size={12} opacity={0.55} />
                 </Button>
               )}
@@ -250,7 +248,7 @@ export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void 
                     onClick={() => void handleOpen()}
                   >
                     <FileText size={14} />
-                    {t("shell.openFile")}
+                    打开文件
                   </Menu.Item>
                   <Menu.Item
                     value="open-folder"
@@ -265,7 +263,7 @@ export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void 
                     onClick={() => void handleWorkspace()}
                   >
                     <FolderTree size={14} />
-                    {t("shell.openFolder")}
+                    打开文件夹
                   </Menu.Item>
                 </Menu.Content>
               </Menu.Positioner>
@@ -274,8 +272,8 @@ export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void 
 
           {compact ? (
             <IconButton
-              aria-label={t("shell.tocBar")}
-              title={t("shell.tocBarShortcut")}
+              aria-label="目录栏"
+              title="目录栏 (Ctrl+B)"
               variant={tocShown ? "subtle" : "ghost"}
               size="xs"
               onClick={handleTocButton}
@@ -284,28 +282,28 @@ export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void 
             </IconButton>
           ) : (
             <Button
-              aria-label={t("shell.tocBar")}
-              title={t("shell.tocBarShortcut")}
+              aria-label="目录栏"
+              title="目录栏 (Ctrl+B)"
               variant={tocShown ? "subtle" : "ghost"}
               size="sm"
               gap={1.5}
               onClick={handleTocButton}
             >
               <PanelLeft size={15} />
-              {t("shell.toc")}
+              目录
             </Button>
           )}
 
           {/* 边距与字号:同一套悬停式滑条控件,面板内容各自不同。 */}
           <TitleBarSliderControl
             icon={StretchHorizontal}
-            label={t("shell.margin")}
-            title={t("shell.marginTitle")}
+            label="边距"
+            title="调整内容左右边距"
             compact={compact}
           >
             <HStack justify="space-between" mb={2}>
               <Text fontSize="xs" color="fg.muted">
-                {t("shell.contentPadding")}
+                内容边距
               </Text>
               <Text fontSize="xs" color="fg.muted" fontVariantNumeric="tabular-nums">
                 {contentPadding}px
@@ -329,9 +327,9 @@ export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void 
             <HStack gap={1} mt={2}>
               {(
                 [
-                  { v: 0, label: t("shell.paddingNarrow") },
-                  { v: 200, label: t("shell.paddingMedium") },
-                  { v: 400, label: t("shell.paddingWide") },
+                  { v: 0, label: "窄" },
+                  { v: 200, label: "适中" },
+                  { v: 400, label: "宽" },
                 ] as const
               ).map((opt) => (
                 <Button
@@ -349,13 +347,13 @@ export function TitleBar({ onOpenError }: { onOpenError?: (msg: string) => void 
 
           <TitleBarSliderControl
             icon={Type}
-            label={t("shell.fontSize")}
-            title={t("shell.fontSizeTitle")}
+            label="字号"
+            title="调整正文字号 (Ctrl+- / Ctrl+=)"
             compact={compact}
           >
             <HStack justify="space-between" mb={2}>
               <Text fontSize="xs" color="fg.muted">
-                {t("shell.bodyFontSize")}
+                正文字号
               </Text>
               <Text fontSize="xs" color="fg.muted" fontVariantNumeric="tabular-nums">
                 {fontSize}px

@@ -4,8 +4,6 @@ import { persist } from "zustand/middleware";
 export type ViewMode = "preview" | "code";
 /** 关闭窗口行为:每次询问 / 隐藏到托盘 / 直接退出。 */
 export type CloseAction = "ask" | "tray" | "exit";
-/** 界面语言:"auto" 跟随系统。 */
-export type Language = "auto" | "zh" | "zh-TW" | "ja" | "en";
 /** 统一侧栏的 Tab:目录(本文档大纲)或 文件(工作区目录树)。 */
 export type SidebarTab = "toc" | "files";
 
@@ -47,7 +45,6 @@ interface SettingsState {
   editMode: boolean;
   /** 关闭窗口行为(勾选"不再提醒"后由关闭对话框写入)。 */
   closeAction: CloseAction;
-  language: Language;
   setFontSize: (n: number) => void;
   toggleToc: () => void;
   setSidebarTab: (v: SidebarTab) => void;
@@ -57,7 +54,6 @@ interface SettingsState {
   setViewMode: (v: ViewMode) => void;
   toggleEditMode: () => void;
   setCloseAction: (v: CloseAction) => void;
-  setLanguage: (l: Language) => void;
 }
 
 export const useSettings = create<SettingsState>()(
@@ -72,7 +68,6 @@ export const useSettings = create<SettingsState>()(
       viewMode: "preview",
       editMode: false,
       closeAction: "ask",
-      language: "auto",
       // 字号滑动过渡在 MarkdownView 的 font-size transition 中实现。
       setFontSize: (n) =>
         set({ fontSize: Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, n)) }),
@@ -88,7 +83,6 @@ export const useSettings = create<SettingsState>()(
       setViewMode: (v) => set({ viewMode: v }),
       toggleEditMode: () => set((s) => ({ editMode: !s.editMode })),
       setCloseAction: (v) => set({ closeAction: v }),
-      setLanguage: (l) => set({ language: l }),
     }),
     { name: "openmd-settings" },
   ),

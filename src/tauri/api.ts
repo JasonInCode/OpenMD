@@ -1,7 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
-import i18n from "i18next";
 
 export const MARKDOWN_EXTENSIONS = ["md", "markdown", "mdown", "mkd"];
 
@@ -178,7 +177,7 @@ export async function getOpenedPaths(): Promise<OpenedPaths> {
 export async function openFileDialog(): Promise<string[] | null> {
   return open({
     multiple: true,
-    title: i18n.t("stores.api.openFileDialogTitle"),
+    title: "打开 Markdown 文件",
     filters: [{ name: "Markdown", extensions: MARKDOWN_EXTENSIONS }],
   });
 }
@@ -188,7 +187,7 @@ export async function openFolderDialog(): Promise<string | null> {
   const picked = await open({
     directory: true,
     multiple: false,
-    title: i18n.t("stores.api.openFolderDialogTitle"),
+    title: "选择工作区文件夹",
   });
   if (Array.isArray(picked)) return picked[0] ?? null;
   return picked;
@@ -270,8 +269,8 @@ const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "av
 export async function openImageDialog(): Promise<string | null> {
   const picked = await open({
     multiple: false,
-    title: i18n.t("stores.api.selectImageDialogTitle"),
-    filters: [{ name: i18n.t("stores.api.imageFilterName"), extensions: IMAGE_EXTENSIONS }],
+    title: "选择图片",
+    filters: [{ name: "图片", extensions: IMAGE_EXTENSIONS }],
   });
   if (Array.isArray(picked)) return picked[0] ?? null;
   return picked;

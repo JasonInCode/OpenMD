@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { useTranslation } from "react-i18next";
 import { Box, Flex } from "@chakra-ui/react";
 import { FolderOpen, ListTree } from "lucide-react";
 import { useSettings, type SidebarTab } from "../stores/settings";
@@ -48,7 +47,6 @@ function TabButton({
  * 独立工作:没打开工作区时文件夹 Tab 显示引导按钮,目录 Tab 始终可用。
  */
 export function Sidebar({ open }: { open: boolean }) {
-  const { t } = useTranslation();
   const sidebarTab = useSettings((s) => s.sidebarTab);
   const setSidebarTab = useSettings((s) => s.setSidebarTab);
 
@@ -58,8 +56,8 @@ export function Sidebar({ open }: { open: boolean }) {
   };
 
   const tabs: { key: SidebarTab; label: string; icon: ReactNode }[] = [
-    { key: "files", label: t("shell.workspace"), icon: <FolderOpen size={13} /> },
-    { key: "toc", label: t("shell.toc"), icon: <ListTree size={13} /> },
+    { key: "files", label: "文件夹", icon: <FolderOpen size={13} /> },
+    { key: "toc", label: "目录", icon: <ListTree size={13} /> },
   ];
 
   return (

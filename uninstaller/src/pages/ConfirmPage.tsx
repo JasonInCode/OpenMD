@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 
 interface ConfirmPageProps {
@@ -7,13 +6,12 @@ interface ConfirmPageProps {
 }
 
 export default function ConfirmPage({ onStart }: ConfirmPageProps) {
-  const { t } = useTranslation();
   const [installDir, setInstallDir] = useState("");
 
   useEffect(() => {
     invoke<{ install_dir: string }>("get_install_info")
       .then((info) => setInstallDir(info.install_dir))
-      .catch(() => setInstallDir(t("unknown")));
+      .catch(() => setInstallDir("未知"));
   }, []);
 
   return (
@@ -36,10 +34,10 @@ export default function ConfirmPage({ onStart }: ConfirmPageProps) {
           </svg>
           <div>
             <p style={{ fontSize: 13, color: "rgba(255, 255, 255, 0.75)", lineHeight: 1.6, marginBottom: 8 }}>
-              {t("confirm_warning")}
+              此操作不可恢复，请确保您已备份重要数据。
             </p>
             <p style={{ fontSize: 12, color: "rgba(255, 255, 255, 0.55)" }}>
-              {t("confirm_location")}{" "}
+              安装位置：{" "}
               <span style={{ color: "#ffffff", fontWeight: 500 }}>{installDir}</span>
             </p>
           </div>
@@ -52,7 +50,7 @@ export default function ConfirmPage({ onStart }: ConfirmPageProps) {
         onClick={onStart}
         style={{ maxWidth: 360, alignSelf: "center", width: "100%", marginTop: 4 }}
       >
-        {t("confirm_btn")}
+        开始卸载
       </button>
     </div>
   );

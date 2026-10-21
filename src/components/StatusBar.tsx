@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { Box, Button, HStack, IconButton, SegmentGroup, Text } from "@chakra-ui/react";
 import { useTheme } from "next-themes";
 import { Code2, Eye, Moon, Play, Settings, Sun } from "lucide-react";
@@ -21,7 +20,6 @@ import { PresentationMode } from "./PresentationMode";
  * 没有打开文档(首页)时整个状态栏不渲染——为空时显示一个 26px 高的边框条反而更难看。
  */
 export function StatusBar() {
-  const { t } = useTranslation();
   const tabs = useTabs((s) => s.tabs);
   const activeId = useTabs((s) => s.activeId);
   const viewMode = useSettings((s) => s.viewMode);
@@ -63,18 +61,18 @@ export function StatusBar() {
       color="fg.muted"
       userSelect="none"
     >
-      {tab.diskChanged && <Text whiteSpace="nowrap" color="orange.400">{t("shell.fileChangedOnDisk")}</Text>}
-      {isDirty(tab) && <Text whiteSpace="nowrap" color="fg">{t("shell.unsaved")}</Text>}
+      {tab.diskChanged && <Text whiteSpace="nowrap" color="orange.400">文件已在磁盘上修改</Text>}
+      {isDirty(tab) && <Text whiteSpace="nowrap" color="fg">未保存</Text>}
       {tab.path && (
         <>
-          <Text whiteSpace="nowrap">{t("shell.wordCount", { count: wordCount })}</Text>
-          <Text whiteSpace="nowrap">{t("shell.charCount", { count: charCount })}</Text>
-          <Text whiteSpace="nowrap">{t("shell.headingCount", { count: entries.length })}</Text>
+          <Text whiteSpace="nowrap">{`${wordCount} 词`}</Text>
+          <Text whiteSpace="nowrap">{`${charCount} 字符`}</Text>
+          <Text whiteSpace="nowrap">{`${entries.length} 个标题`}</Text>
         </>
       )}
       {tab.error && (
         <Text ms="auto" color="fg.subtle">
-          {t("shell.openFailed")}
+          打开失败
         </Text>
       )}
 
@@ -97,29 +95,29 @@ export function StatusBar() {
             const next = e.value as ViewMode;
             withViewTransition(() => setViewMode(next));
           }}
-          aria-label={t("viewer.toolbar.switchView")}
+          aria-label="切换预览或代码视图"
         >
           <SegmentGroup.Indicator />
           <SegmentGroup.Item value="preview">
             <SegmentGroup.ItemHiddenInput />
             <SegmentGroup.ItemText display="inline-flex" alignItems="center" gap={1}>
               <Eye size={12} />
-              {t("viewer.toolbar.preview")}
+              预览
             </SegmentGroup.ItemText>
           </SegmentGroup.Item>
           <SegmentGroup.Item value="code">
             <SegmentGroup.ItemHiddenInput />
             <SegmentGroup.ItemText display="inline-flex" alignItems="center" gap={1}>
               <Code2 size={12} />
-              {t("viewer.toolbar.code")}
+              代码
             </SegmentGroup.ItemText>
           </SegmentGroup.Item>
         </SegmentGroup.Root>
       </HStack>
       {isMarp && viewMode === "preview" && tab.path && (
         <Button
-          aria-label={t("viewer.toolbar.present")}
-          title={t("viewer.toolbar.present")}
+          aria-label="演示"
+          title="演示"
           size="2xs"
           variant="ghost"
           gap={1}
@@ -127,14 +125,14 @@ export function StatusBar() {
           onClick={() => setPresenting(true)}
         >
           <Play size={11} />
-          {t("viewer.toolbar.present")}
+          演示
         </Button>
       )}
 
       {/* 设置 + 主题切换:右下角图标-only,与右侧控件间隔几个像素。 */}
       <IconButton
-        aria-label={t("shell.toggleTheme")}
-        title={t("shell.toggleThemeTitle")}
+        aria-label="切换主题"
+        title="切换亮/暗主题"
         variant="ghost"
         size="2xs"
         color="fg.muted"
@@ -144,8 +142,8 @@ export function StatusBar() {
         {isDark ? <Sun size={12} /> : <Moon size={12} />}
       </IconButton>
       <IconButton
-        aria-label={t("shell.settings")}
-        title={t("shell.settings")}
+        aria-label="设置"
+        title="设置"
         variant="ghost"
         size="2xs"
         color="fg.muted"

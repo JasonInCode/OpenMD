@@ -1,5 +1,4 @@
 import { useRef } from "react";
-import { useTranslation } from "react-i18next";
 import { Box, Text, VStack } from "@chakra-ui/react";
 import { setActiveHeading, useToc } from "../stores/toc";
 import { FloatingScrollbar } from "./FloatingScrollbar";
@@ -9,7 +8,6 @@ import { FloatingScrollbar } from "./FloatingScrollbar";
  * (外层的宽度过渡动画与 Tab 切换在 Sidebar.tsx。)
  */
 export function TocPanel() {
-  const { t } = useTranslation();
   const { entries, activeId } = useToc();
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -67,11 +65,11 @@ export function TocPanel() {
         px={2}
         py={3}
         as="nav"
-        aria-label={t("shell.toc")}
+        aria-label="目录"
       >
         {entries.length === 0 ? (
           <Text fontSize="sm" color="fg.subtle" px={2}>
-            {t("shell.noHeadings")}
+            无标题
           </Text>
         ) : (
           list

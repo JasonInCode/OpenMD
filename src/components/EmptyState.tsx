@@ -1,7 +1,6 @@
 import { useRef } from "react";
 import { Box, Button, Flex, HStack, IconButton, Text, VStack } from "@chakra-ui/react";
 import { FileText, FolderOpen, FolderTree, Settings, X } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
 import { useRecent, type RecentFile } from "../stores/recent";
 import { useSettings } from "../stores/settings";
@@ -28,7 +27,6 @@ function dirOf(path: string): string {
  * 在任何背景下都只剩字形本身。Ctrl+O 或拖 .md 进窗口同样可以打开。
  */
 export function EmptyState() {
-  const { t } = useTranslation();
   const { resolvedTheme } = useTheme();
   const recents = useRecent((s) => s.files);
   const removeRecent = useRecent((s) => s.remove);
@@ -48,12 +46,8 @@ export function EmptyState() {
     const hm = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
     if (d.toDateString() === now.toDateString()) return hm;
     if (d.getFullYear() === now.getFullYear())
-      return t("misc.dateMonthDay", { month: d.getMonth() + 1, day: d.getDate() });
-    return t("misc.dateFull", {
-      year: d.getFullYear(),
-      month: d.getMonth() + 1,
-      day: d.getDate(),
-    });
+      return `${d.getMonth() + 1}月${d.getDate()}日`;
+    return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
   };
 
   const handleClick = async () => {
@@ -107,7 +101,7 @@ export function EmptyState() {
       onClick={handleClick}
     >
       <FolderOpen size={15} />
-      {t("misc.openFile")}
+      打开文件
     </Button>
   );
 
@@ -127,7 +121,7 @@ export function EmptyState() {
       onClick={handleOpenFolder}
     >
       <FolderTree size={15} />
-      {t("misc.openFolder")}
+      打开文件夹
     </Button>
   );
 
@@ -169,7 +163,7 @@ export function EmptyState() {
       onClick={() => setSettingsOpen(true)}
     >
       <Settings size={15} />
-      {t("misc.settings")}
+      设置
     </Button>
   );
 
@@ -225,12 +219,12 @@ export function EmptyState() {
         <Box w="min(460px, 42vw)">
           <Flex align="center" mb={2} px={3}>
             <Text fontSize="xs" color="fg.muted" letterSpacing="wider">
-              {t("misc.recentFiles")}
+              最近打开
             </Text>
             <Button
               ms="auto"
-              aria-label={t("misc.clearRecent")}
-              title={t("misc.clearRecent")}
+              aria-label="清空最近打开"
+              title="清空最近打开"
               variant="ghost"
               size="xs"
               h="20px"
@@ -239,7 +233,7 @@ export function EmptyState() {
               _hover={{ color: "fg", bg: "bg.subtle" }}
               onClick={() => clearRecents()}
             >
-              {t("misc.clear")}
+              清空
             </Button>
           </Flex>
           <Box position="relative">
@@ -285,8 +279,8 @@ export function EmptyState() {
                   </Text>
                   <IconButton
                     className="recent-remove"
-                    aria-label={t("misc.removeFromList", { name: f.name })}
-                    title={t("misc.remove")}
+                    aria-label={`从列表移除 ${f.name}`}
+                    title="从列表移除"
                     variant="ghost"
                     size="xs"
                     flexShrink={0}

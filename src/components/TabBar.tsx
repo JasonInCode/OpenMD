@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { Box, HStack, IconButton, Text } from "@chakra-ui/react";
 import { X } from "lucide-react";
 import { isDirty, useTabs } from "../stores/tabs";
@@ -29,7 +28,6 @@ function TabDropIndicator() {
 }
 
 export function TabBar() {
-  const { t } = useTranslation();
   const { tabs, activeId, setActive, requestCloseTab } = useTabs();
 
   return (
@@ -107,14 +105,14 @@ export function TabBar() {
                   border="1.5px solid"
                   borderColor="fg"
                   flexShrink={0}
-                  title={t("tabs.tab.unsavedChanges")}
+                  title="有未保存的修改"
                 />
               )}
               <Text as="span" truncate>
                 {tab.name}
               </Text>
               <IconButton
-                aria-label={t("tabs.tab.close")}
+                aria-label="关闭标签"
                 size="2xs"
                 variant="ghost"
                 flexShrink={0}

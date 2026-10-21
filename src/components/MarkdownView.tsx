@@ -12,8 +12,6 @@ import {
   Scissors,
   Undo2,
 } from "lucide-react";
-import i18n from "i18next";
-import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { openUrl, openPath } from "@tauri-apps/plugin-opener";
@@ -253,7 +251,6 @@ function splitHighlightedLines(html: string): string[] {
 }
 
 export function MarkdownView({ tab }: { tab: Tab }) {
-  const { t } = useTranslation();
   const { fontSize, contentPadding, viewMode, editMode } = useSettings();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme !== "light";
@@ -421,13 +418,13 @@ export function MarkdownView({ tab }: { tab: Tab }) {
       if (pre.querySelector(".code-copy-btn")) return;
       const btn = document.createElement("button");
       btn.className = "code-copy-btn";
-      btn.textContent = i18n.t("viewer.code.copy");
+      btn.textContent = "Copy";
       btn.addEventListener("click", () => {
         const code = pre.querySelector("code");
         const text = code?.textContent ?? pre.textContent ?? "";
         navigator.clipboard.writeText(text).then(() => {
-          btn.textContent = i18n.t("viewer.code.copied");
-          setTimeout(() => (btn.textContent = i18n.t("viewer.code.copy")), 1500);
+          btn.textContent = "Copied!";
+          setTimeout(() => (btn.textContent = "Copy"), 1500);
         });
       });
       pre.appendChild(btn);
@@ -711,7 +708,7 @@ export function MarkdownView({ tab }: { tab: Tab }) {
     const picked = await pickImage();
     const article = articleRef.current;
     if (!picked || !article) return;
-    const html = `<img src="${escapeAttr(picked.src)}" data-original-src="${escapeAttr(picked.rel)}" alt="${t("viewer.image.alt")}">`;
+    const html = `<img src="${escapeAttr(picked.src)}" data-original-src="${escapeAttr(picked.rel)}" alt="图片">`;
     article.focus();
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0 || !article.contains(sel.anchorNode)) {
@@ -902,7 +899,7 @@ export function MarkdownView({ tab }: { tab: Tab }) {
         const entries: MenuEntry[] = [
           {
             type: "item",
-            label: t("viewer.menu.copy"),
+            label: "复制",
             icon: <Copy size={14} />,
             disabled: sel.length === 0,
             onClick: () => void copySelection().catch(() => {}),
@@ -912,7 +909,7 @@ export function MarkdownView({ tab }: { tab: Tab }) {
           entries.push(
             {
               type: "item",
-              label: t("viewer.menu.copyImage"),
+              label: "复制图片",
               icon: <ImageIcon size={14} />,
               // 远程图受 CORS 限制,复制到剪贴板大概率失败,只留"复制地址"。
               disabled: !isLocalImageSrc(img.currentSrc || img.src),
@@ -920,7 +917,7 @@ export function MarkdownView({ tab }: { tab: Tab }) {
             },
             {
               type: "item",
-              label: t("viewer.menu.copyImageAddress"),
+              label: "复制图片地址",
               icon: <Link2 size={14} />,
               onClick: () =>
                 void navigator.clipboard
@@ -933,7 +930,7 @@ export function MarkdownView({ tab }: { tab: Tab }) {
         if (href) {
           entries.push({
             type: "item",
-            label: t("viewer.menu.openLink"),
+            label: "在浏览器打开链接",
             icon: <ExternalLink size={14} />,
             onClick: () => void openUrl(href),
           });
@@ -942,7 +939,7 @@ export function MarkdownView({ tab }: { tab: Tab }) {
           { type: "sep" },
           {
             type: "item",
-            label: t("viewer.menu.selectAll"),
+            label: "全选",
             onClick: () => {
               const scope = articleRef.current ?? target;
               window.getSelection()?.selectAllChildren(scope);
@@ -956,13 +953,13 @@ export function MarkdownView({ tab }: { tab: Tab }) {
         const ta = codeTextareaRef.current;
         const hasSel = !!ta && ta.selectionStart < ta.selectionEnd;
         return [
-          { type: "item", label: t("viewer.menu.cut"), icon: <Scissors size={14} />, disabled: !hasSel, onClick: () => textareaCopy("cut") },
-          { type: "item", label: t("viewer.menu.copy"), icon: <Copy size={14} />, disabled: !hasSel, onClick: () => textareaCopy("copy") },
-          { type: "item", label: t("viewer.menu.paste"), icon: <ClipboardPaste size={14} />, onClick: () => void textareaPaste() },
+          { type: "item", label: "剪切", icon: <Scissors size={14} />, disabled: !hasSel, onClick: () => textareaCopy("cut") },
+          { type: "item", label: "复制", icon: <Copy size={14} />, disabled: !hasSel, onClick: () => textareaCopy("copy") },
+          { type: "item", label: "粘贴", icon: <ClipboardPaste size={14} />, onClick: () => void textareaPaste() },
           { type: "sep" },
           {
             type: "item",
-            label: t("viewer.menu.selectAll"),
+            label: "全选",
             onClick: () => {
               ta?.focus();
               ta?.select();
@@ -973,12 +970,12 @@ export function MarkdownView({ tab }: { tab: Tab }) {
 
       // 编辑开 + 预览
       const entries: MenuEntry[] = [
-        { type: "item", label: t("viewer.menu.undo"), icon: <Undo2 size={14} />, onClick: menuUndo },
-        { type: "item", label: t("viewer.menu.redo"), icon: <Redo2 size={14} />, onClick: menuRedo },
+        { type: "item", label: "撤销", icon: <Undo2 size={14} />, onClick: menuUndo },
+        { type: "item", label: "重做", icon: <Redo2 size={14} />, onClick: menuRedo },
         { type: "sep" },
         {
           type: "item",
-          label: t("viewer.menu.cut"),
+          label: "剪切",
           icon: <Scissors size={14} />,
           disabled: sel.length === 0,
           onClick: () => {
@@ -989,7 +986,7 @@ export function MarkdownView({ tab }: { tab: Tab }) {
         },
         {
           type: "item",
-          label: t("viewer.menu.copy"),
+          label: "复制",
           icon: <Copy size={14} />,
           disabled: sel.length === 0,
           onClick: () => {
@@ -998,9 +995,9 @@ export function MarkdownView({ tab }: { tab: Tab }) {
             document.execCommand("copy");
           },
         },
-        { type: "item", label: t("viewer.menu.paste"), icon: <ClipboardPaste size={14} />, onClick: () => void pasteIntoPreview() },
+        { type: "item", label: "粘贴", icon: <ClipboardPaste size={14} />, onClick: () => void pasteIntoPreview() },
         { type: "sep" },
-        { type: "item", label: t("viewer.menu.insertImage"), icon: <ImagePlus size={14} />, onClick: () => void insertImageAtCaret() },
+        { type: "item", label: "插入图片…", icon: <ImagePlus size={14} />, onClick: () => void insertImageAtCaret() },
       ];
       if (sel.length > 0) {
         // 选中文本:排版(加粗进浏览器撤销栈;字号 span / 对齐 align 由段落映射回源码)。
@@ -1024,7 +1021,7 @@ export function MarkdownView({ tab }: { tab: Tab }) {
           { type: "sep" },
           {
             type: "item",
-            label: t("viewer.menu.bold"),
+            label: "加粗",
             hint: "Ctrl+B",
             onClick: () => {
               articleRef.current?.focus();
@@ -1036,7 +1033,7 @@ export function MarkdownView({ tab }: { tab: Tab }) {
             type: "custom",
             node: (
               <MenuStepper
-                label={t("viewer.menu.fontSize")}
+                label="字号"
                 unit="px"
                 value={selFontPx ?? 17}
                 step={2}
@@ -1049,18 +1046,18 @@ export function MarkdownView({ tab }: { tab: Tab }) {
           {
             type: "custom",
             node: (
-              <MenuRow label={t("viewer.menu.layout")}>
-                <MenuOpt active={selBlockAlign === "left"} onClick={() => { alignSelectedBlocks("left"); setMenu(null); }}>{t("viewer.menu.alignLeft")}</MenuOpt>
-                <MenuOpt active={selBlockAlign === "center"} onClick={() => { alignSelectedBlocks("center"); setMenu(null); }}>{t("viewer.menu.alignCenter")}</MenuOpt>
-                <MenuOpt active={selBlockAlign === "right"} onClick={() => { alignSelectedBlocks("right"); setMenu(null); }}>{t("viewer.menu.alignRight")}</MenuOpt>
-                <MenuOpt active={selBlockAlign === null} onClick={() => { alignSelectedBlocks(null); setMenu(null); }}>{t("viewer.menu.alignDefault")}</MenuOpt>
+              <MenuRow label="布局">
+                <MenuOpt active={selBlockAlign === "left"} onClick={() => { alignSelectedBlocks("left"); setMenu(null); }}>左</MenuOpt>
+                <MenuOpt active={selBlockAlign === "center"} onClick={() => { alignSelectedBlocks("center"); setMenu(null); }}>中</MenuOpt>
+                <MenuOpt active={selBlockAlign === "right"} onClick={() => { alignSelectedBlocks("right"); setMenu(null); }}>右</MenuOpt>
+                <MenuOpt active={selBlockAlign === null} onClick={() => { alignSelectedBlocks(null); setMenu(null); }}>默认</MenuOpt>
               </MenuRow>
             ),
           },
         );
       }
       if (img) {
-        entries.push({ type: "item", label: t("viewer.menu.replaceImage"), icon: <Replace size={14} />, onClick: () => void replaceImage(img) });
+        entries.push({ type: "item", label: "替换图片…", icon: <Replace size={14} />, onClick: () => void replaceImage(img) });
         entries.push({ type: "sep" });
         const wAttr = img.getAttribute("width");
         const natural = img.naturalWidth || 0;
@@ -1069,7 +1066,7 @@ export function MarkdownView({ tab }: { tab: Tab }) {
             type: "custom",
             node: (
               <MenuStepper
-                label={t("viewer.menu.size")}
+                label="大小"
                 unit="px"
                 value={wAttr ? Number(wAttr) : natural || 300}
                 onApply={(px) => resizeImage(img, undefined, px)}
@@ -1196,7 +1193,7 @@ export function MarkdownView({ tab }: { tab: Tab }) {
         <Alert.Root status="error" maxW="560px" variant="subtle">
           <Alert.Indicator />
           <Alert.Content>
-            <Alert.Title>{t("viewer.error.cannotOpen", { name: tab.name })}</Alert.Title>
+            <Alert.Title>{`无法打开 ${tab.name}`}</Alert.Title>
             <Alert.Description>{tab.error}</Alert.Description>
           </Alert.Content>
         </Alert.Root>

@@ -40,9 +40,6 @@ importers:
       highlight.js:
         specifier: ^11.11.0
         version: 11.12.0
-      i18next:
-        specifier: ^26.0.5
-        version: 26.5.2(typescript@5.8.3)
       katex:
         specifier: ^0.19.0
         version: 0.19.0
@@ -115,9 +112,6 @@ importers:
       react-dom:
         specifier: ^19.1.0
         version: 19.3.1(react@19.3.1)
-      react-i18next:
-        specifier: ^17.0.4
-        version: 17.1.0(@types/react@19.3.0)(i18next@26.5.2(typescript@5.8.3))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@5.8.3)
       turndown:
         specifier: ^7.2.4
         version: 7.2.4
@@ -194,18 +188,12 @@ importers:
       framer-motion:
         specifier: ^11.18.2
         version: 11.18.2(@emotion/is-prop-valid@1.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      i18next:
-        specifier: ^26.0.5
-        version: 26.5.2(typescript@5.8.3)
       react:
         specifier: ^19.0.0
         version: 19.3.1
       react-dom:
         specifier: ^19.0.0
         version: 19.3.1(react@19.3.1)
-      react-i18next:
-        specifier: ^17.0.4
-        version: 17.1.0(@types/react@19.3.0)(i18next@26.5.2(typescript@5.8.3))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@5.8.3)
       react-icons:
         specifier: ^5.7.0
         version: 5.7.0(@types/react@19.3.0)(react@19.3.1)
@@ -252,18 +240,12 @@ importers:
       framer-motion:
         specifier: ^11.18.2
         version: 11.18.2(@emotion/is-prop-valid@1.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      i18next:
-        specifier: ^26.0.5
-        version: 26.5.2(typescript@5.8.3)
       react:
         specifier: ^19.0.0
         version: 19.3.1
       react-dom:
         specifier: ^19.0.0
         version: 19.3.1(react@19.3.1)
-      react-i18next:
-        specifier: ^17.0.4
-        version: 17.1.0(@types/react@19.3.0)(i18next@26.5.2(typescript@5.8.3))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@5.8.3)
       react-icons:
         specifier: ^5.7.0
         version: 5.7.0(@types/react@19.3.0)(react@19.3.1)
@@ -1977,17 +1959,6 @@ packages:
     resolution: {integrity: sha512-UikN5yr7xsCDAq87Or5or0PAlD3HJJOKVzM05az588WnpDJ4Ux7a2A53Qi6gofGg2/EtvF/H4hCi/TXfCW4Y6w==}
     engines: {node: ^22.13.0 || >=24.0.0}
 
-  html-parse-stringify@4.0.1:
-    resolution: {integrity: sha512-0zHsZJrK7S3K2aucXWL6ycoYJ/iNtIcFHC/nYQgFklPtrv5LpJctIiSCroWZWeuoXvuyFdzp6KzjJQ+OT5MfFw==}
-
-  i18next@26.5.2:
-    resolution: {integrity: sha512-6fIXt//2MZNok3tULyjnypxe3vbsy3pV1bVg8p2x3yKrzZvp7z3T+wXx/88LQsATRdhyJeAUAvUxEtxsHdJ29w==}
-    peerDependencies:
-      typescript: ^5 || ^6 || ^7
-    peerDependenciesMeta:
-      typescript:
-        optional: true
-
   iconv-lite@0.6.3:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==}
     engines: {node: '>=0.10.0'}
@@ -2360,23 +2331,6 @@ packages:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc
     peerDependenciesMeta:
       '@types/react':
-        optional: true
-
-  react-i18next@17.1.0:
-    resolution: {integrity: sha512-4VouOnTDyvhvqXx6WZ+s3/cgSiaLutILdYkO3P1Ms+4qcKR7At+JP4Vi7IeHkVLyVV+DmN1l23Pn73UcwSGGPA==}
-    peerDependencies:
-      '@types/react': '*'
-      i18next: '>= 26.2.0'
-      react: '>= 16.8.0'
-      react-dom: '*'
-      react-native: '*'
-      typescript: ^5 || ^6 || ^7
-    peerDependenciesMeta:
-      react-dom:
-        optional: true
-      react-native:
-        optional: true
-      typescript:
         optional: true
 
   react-icons@5.7.0:
@@ -4911,12 +4865,6 @@ snapshots:
     transitivePeerDependencies:
       - '@noble/hashes'
 
-  html-parse-stringify@4.0.1: {}
-
-  i18next@26.5.2(typescript@5.8.3):
-    optionalDependencies:
-      typescript: 5.8.3
-
   iconv-lite@0.6.3:
     dependencies:
       safer-buffer: 2.1.2
@@ -5255,18 +5203,6 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.3.0
 
-  react-i18next@17.1.0(@types/react@19.3.0)(i18next@26.5.2(typescript@5.8.3))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@5.8.3):
-    dependencies:
-      '@babel/runtime': 7.29.10
-      '@types/react': 19.3.0
-      html-parse-stringify: 4.0.1
-      i18next: 26.5.2(typescript@5.8.3)
-      react: 19.3.1
-      use-sync-external-store: 1.7.0(react@19.3.1)
-    optionalDependencies:
-      react-dom: 19.3.1(react@19.3.1)
-      typescript: 5.8.3
-
   react-icons@5.7.0(@types/react@19.3.0)(react@19.3.1):
     dependencies:
       '@types/react': 19.3.0
@@ -5492,6 +5428,7 @@ snapshots:
   use-sync-external-store@1.7.0(react@19.3.1):
     dependencies:
       react: 19.3.1
+    optional: true
 
   uuid@14.0.3: {}
 

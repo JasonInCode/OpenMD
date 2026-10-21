@@ -14,7 +14,7 @@ const APP_ICON_BYTES: &[u8] = include_bytes!("../icons/icon.ico");
 /// 注册表只能引用磁盘上的文件,内嵌资源得先落到应用数据目录。
 fn write_icon(app: &tauri::AppHandle, name: &str, bytes: &[u8]) -> Result<PathBuf, String> {
     let dir = app.path().app_data_dir().map_err(|e| {
-        rust_i18n::t!("file_assoc.app_data_dir_unavailable", error = e).into_owned()
+        format!("无法定位应用数据目录: {}", e)
     })?;
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let icon_path = dir.join(name);
@@ -24,17 +24,17 @@ fn write_icon(app: &tauri::AppHandle, name: &str, bytes: &[u8]) -> Result<PathBu
 
 fn current_exe() -> Result<PathBuf, String> {
     std::env::current_exe()
-        .map_err(|e| rust_i18n::t!("file_assoc.exe_path_unavailable", error = e).into_owned())
+        .map_err(|e| format!("无法获取程序路径: {}", e))
 }
 
-/// 共享 crate 按失败阶段区分错误,这里挑对应的本地化提示。
+/// 共享 crate 按失败阶段区分错误,这里挑对应的错误提示。
 fn describe(e: ShellVerbError) -> String {
     match &e {
         ShellVerbError::Key(..) | ShellVerbError::Write(..) => {
-            rust_i18n::t!("file_assoc.registry_write_failed", error = e).into_owned()
+            format!("写入注册表失败: {}", e)
         }
         ShellVerbError::Delete(..) => {
-            rust_i18n::t!("file_assoc.registry_delete_failed", error = e).into_owned()
+            format!("删除注册表失败: {}", e)
         }
     }
 }

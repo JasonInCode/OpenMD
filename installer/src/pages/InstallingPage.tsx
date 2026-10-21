@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 
 interface InstallingPageProps {
@@ -19,7 +18,6 @@ export default function InstallingPage({
   onComplete,
   onError,
 }: InstallingPageProps) {
-  const { t } = useTranslation();
   const [progress, setProgress] = useState(0);
   const hasStarted = useRef(false);
 
@@ -82,7 +80,7 @@ export default function InstallingPage({
       {/* Logo 正下方：细白进度条 + 上方小字（左状态、右百分比） */}
       <div className="install-progress">
         <div className="progress-meta">
-          <span className="progress-label">{t("install_desc")}</span>
+          <span className="progress-label">正在安装OpenMD，请稍候...</span>
           <span className="progress-value">{progress}%</span>
         </div>
         <div className="progress-bar">
