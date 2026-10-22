@@ -2,6 +2,7 @@ mod commands;
 mod editors;
 mod file_assoc;
 mod folder_window;
+mod single_instance;
 mod stats;
 mod tab_drag;
 mod watcher;
@@ -149,16 +150,24 @@ fn is_markdown_file(path: &Path) -> bool {
             .unwrap_or(false)
 }
 
+/// 命令行里要打开的东西。
+#[derive(Default)]
+struct OpenArgs {
+    files: Vec<String>,
+    folders: Vec<String>,
+    /// 被丢弃的路径与原因:路径不存在,或不是可读的 Markdown 文档。
+    dropped: Vec<(String, &'static str)>,
+}
+
 /// 从 argv 里分拣出要打开的文件与文件夹。两类入口都不带类型标记——文件关联传
 /// `"exe" "%1"`,文件夹右键菜单传的也是同一个形状——所以只能按路径本身判断:
 /// 目录进 folders,现存的 Markdown 文件进 files,其余(flag、未知扩展名、不存在的
-/// 路径)一律丢弃。
-fn collect_open_args<I: Iterator<Item = String>>(args: I) -> (Vec<String>, Vec<String>) {
-    let mut files = Vec::new();
-    let mut folders = Vec::new();
+/// 路径)一律丢弃。丢弃的路径连同原因一并返回:它是"点了没反应"的唯一线索。
+fn collect_open_args<I: Iterator<Item = String>>(args: I) -> OpenArgs {
+    let mut out = OpenArgs::default();
     for arg in args.skip(1).filter(|a| !a.starts_with('-')) {
         let path = if Path::new(&arg).is_absolute() {
-            PathBuf::from(arg)
+            PathBuf::from(&arg)
         } else {
             // 把文件拖到 exe 上时有时只给一个裸文件名。
             std::env::current_dir()
@@ -166,16 +175,24 @@ fn collect_open_args<I: Iterator<Item = String>>(args: I) -> (Vec<String>, Vec<S
                 .unwrap_or_else(|_| PathBuf::from(&arg))
         };
         if path.is_dir() {
-            folders.push(path.to_string_lossy().into_owned());
+            out.folders.push(path.to_string_lossy().into_owned());
         } else if is_markdown_file(&path) {
-            files.push(path.to_string_lossy().into_owned());
+            out.files.push(path.to_string_lossy().into_owned());
+        } else if path.exists() {
+            out.dropped.push((arg, "不是可读的 Markdown 文档"));
+        } else {
+            out.dropped.push((arg, "路径不存在"));
         }
     }
-    (files, folders)
+    out
 }
 
 pub fn run() {
-    let (initial_files, initial_folders) = collect_open_args(std::env::args());
+    let OpenArgs {
+        files: initial_files,
+        folders: initial_folders,
+        dropped,
+    } = collect_open_args(std::env::args());
 
     tauri::Builder::default()
         // 窗口状态插件默认会恢复上次保存的 decorations 标记,导致
@@ -195,12 +212,13 @@ pub fn run() {
                 .with_filter(|label| label == MAIN_WINDOW)
                 .build(),
         )
-        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
-            // A second launch (e.g. "Open With" while running) forwards its
-            // files here instead of starting a new process.
+        .plugin(single_instance::plugin(|app, argv| {
             debug_log(app, &format!("single_instance argv: {argv:?}"));
-            let (files, folders) = collect_open_args(argv.into_iter());
-            push_opened_paths(app, files, folders);
+            let open = collect_open_args(argv.into_iter());
+            for (path, reason) in &open.dropped {
+                debug_log(app, &format!("转发参数丢弃: {path} ({reason})"));
+            }
+            push_opened_paths(app, open.files, open.folders);
             // 第二实例唤起时顺便把主窗口显示到前面
             show_main_window(app);
         }))
@@ -263,7 +281,15 @@ pub fn run() {
             }
             _ => {}
         })
-        .setup(|app| {
+        .setup(move |app| {
+            // 冷启动也要记命令行:它和转发一样是系统投递路径的出处,不记就无从查起。
+            debug_log(
+                app.handle(),
+                &format!("启动 argv: {:?}", std::env::args().collect::<Vec<String>>()),
+            );
+            for (path, reason) in &dropped {
+                debug_log(app.handle(), &format!("启动参数丢弃: {path} ({reason})"));
+            }
             // 首次启动上报统计(版本 + 操作系统,仅一次)
             stats::check_and_send_statistics(app);
 
@@ -321,10 +347,11 @@ mod tests {
         let doc_arg = doc.to_string_lossy().into_owned();
         let folder_arg = folder.to_string_lossy().into_owned();
 
-        let (files, folders) = collect_open_args(argv(&[&doc_arg, &folder_arg]).into_iter());
+        let open = collect_open_args(argv(&[&doc_arg, &folder_arg]).into_iter());
 
-        assert_eq!(files, vec![doc_arg]);
-        assert_eq!(folders, vec![folder_arg]);
+        assert_eq!(open.files, vec![doc_arg]);
+        assert_eq!(open.folders, vec![folder_arg]);
+        assert!(open.dropped.is_empty());
         fs::remove_dir_all(&dir).ok();
     }
 
@@ -337,10 +364,14 @@ mod tests {
         let png_arg = png.to_string_lossy().into_owned();
         let missing_arg = missing.to_string_lossy().into_owned();
 
-        let (files, folders) = collect_open_args(argv(&["--flag", &png_arg, &missing_arg]).into_iter());
+        let open = collect_open_args(argv(&["--flag", &png_arg, &missing_arg]).into_iter());
 
-        assert!(files.is_empty(), "未知扩展名与不存在的路径都不该被打开");
-        assert!(folders.is_empty());
+        assert!(open.files.is_empty(), "未知扩展名与不存在的路径都不该被打开");
+        assert!(open.folders.is_empty());
+        // 丢弃的路径要带原因留下来,不然"点了没反应"无从查起。
+        assert_eq!(open.dropped.len(), 2);
+        assert!(open.dropped.iter().any(|(p, r)| p == &png_arg && *r == "不是可读的 Markdown 文档"));
+        assert!(open.dropped.iter().any(|(p, r)| p == &missing_arg && *r == "路径不存在"));
         fs::remove_dir_all(&dir).ok();
     }
 

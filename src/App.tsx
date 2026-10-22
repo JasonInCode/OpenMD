@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { listen } from "@tauri-apps/api/event";
@@ -53,18 +53,26 @@ function isMarkdownPath(p: string): boolean {
  * 取走 Rust 侧积压的打开请求并打开。前端是队列的唯一消费者:事件只是敲门声,
  * 真正的路径一律从 `getOpenedPaths` 取,所以漏掉一次事件最多晚一个敲门周期。
  * 文件开成文档标签,文件夹开成工作区——与拖拽入口走同一套处理。
+ *
+ * 失败必须让人看见:打开失败只写进控制台的话,用户看到的就是"点了完全没反应"。
  */
-async function drainOpenedPaths(): Promise<void> {
+async function drainOpenedPaths(onError: (message: string) => void): Promise<void> {
   if (!inTauri) return;
   const buffered = await getOpenedPaths().catch((e) => {
     void logAssoc(`getOpenedPaths FAILED: ${e}`);
+    onError(`读取待打开路径失败: ${e}`);
     return { files: [], folders: [] };
   });
   if (buffered.files.length === 0 && buffered.folders.length === 0) return;
   void logAssoc(`drained ${buffered.files.length} files, ${buffered.folders.length} folders`);
   await openStandaloneFiles(buffered.files);
   for (const folder of buffered.folders) {
-    await openFolderInNewWindow(folder).catch((e) => console.error("打开文件夹失败:", e));
+    try {
+      await openFolderInNewWindow(folder);
+    } catch (e) {
+      void logAssoc(`打开文件夹失败: ${folder} ${e}`);
+      onError(`打开文件夹失败: ${folder}`);
+    }
   }
 }
 
@@ -76,6 +84,8 @@ export default function App() {
   const settingsOpen = useUI((s) => s.settingsOpen);
   const setSettingsOpen = useUI((s) => s.setSettingsOpen);
   const [openError, setOpenError] = useState<string | null>(null);
+  // 打开失败统一走底部提示条:静默失败在用户眼里就是"点了没反应"。
+  const reportOpenError = useCallback((message: string) => setOpenError(message), []);
   // 顶部提示条(编辑模式切换等):3 秒自动消失。
   // phase 用于播退场动画(closing → 动画播完再卸载)。
   const [topNotice, setTopNotice] = useState<{ text: string; phase: "open" | "closing" } | null>(null);
@@ -151,10 +161,15 @@ export default function App() {
         // 打开文件夹时新建的窗口:文件夹在建窗时就分配好了,开成工作区。
         const folder = await takePendingFolder().catch(() => null);
         if (folder) {
-          await openFolderAsWorkspace(folder).catch((e) => console.error("打开文件夹失败:", e));
+          try {
+            await openFolderAsWorkspace(folder);
+          } catch (e) {
+            void logAssoc(`打开文件夹工作区失败: ${folder} ${e}`);
+            reportOpenError(`打开文件夹失败: ${folder}`);
+          }
         }
         // 系统"打开方式"的缓冲只有主窗口该排空:新窗口排空了会把待打开的文件抢走。
-        if (IS_MAIN_WINDOW) await drainOpenedPaths();
+        if (IS_MAIN_WINDOW) await drainOpenedPaths(reportOpenError);
       }
       setStartupReady(true);
     })();
@@ -182,11 +197,11 @@ export default function App() {
       );
     });
     const unlistenOpened = onOpenedFiles(() => {
-      void drainOpenedPaths();
+      void drainOpenedPaths(reportOpenError);
     });
     // 资源管理器里右键文件夹「Open with OpenMD」:新开一扇窗口打开它。
     const unlistenFolders = onOpenedFolders(() => {
-      void drainOpenedPaths();
+      void drainOpenedPaths(reportOpenError);
     });
     // 工作区目录树的外部变更(store 内部有拖尾合并,重拉展开目录)
     const unlistenWorkspace = onWorkspaceChanged(({ path }) => {
